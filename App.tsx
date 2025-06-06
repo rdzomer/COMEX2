@@ -113,10 +113,13 @@ const App: React.FC = () => {
     resetStateForNewNcm();
 
     setLoadingMessage('Carregando dados básicos do NCM...');
-    const updateData = await fetchLastUpdateData();
+    // Fetch these first and together
+    const [updateData, desc, unit] = await Promise.all([
+      fetchLastUpdateData(),
+      fetchNcmDescription(submittedNcmCode),
+      fetchNcmUnit(submittedNcmCode)
+    ]);
     setLastUpdateData(updateData);
-    const desc = await fetchNcmDescription(submittedNcmCode);
-    const unit = await fetchNcmUnit(submittedNcmCode);
     const currentNcmDetails = { description: desc, unit: unit };
     setNcmDetails(currentNcmDetails); 
 
@@ -126,22 +129,27 @@ const App: React.FC = () => {
       const historicalToYear = updateData.year ? updateData.year -1 : new Date().getFullYear() -1;
       const historicalPeriod: Period = { from: "2004-01", to: `${historicalToYear}-12` };
       
-      setLoadingMessage('Carregando dados históricos de exportação...');
+      setLoadingMessage('Carregando dados históricos...');
       const histExportMetrics = ["metricFOB", "metricKG", "metricStatistic"];
-      const histExportDataRaw = await fetchComexData("export", historicalPeriod, filters, histExportMetrics, ["ncm"]);
-      
-      setLoadingMessage('Carregando dados históricos de importação...');
       const histImportMetrics = ["metricFOB", "metricFreight", "metricInsurance", "metricCIF", "metricKG", "metricStatistic"];
-      const histImportDataRaw = await fetchComexData("import", historicalPeriod, filters, histImportMetrics, ["ncm"]);
       
+      const [histExportDataRaw, histImportDataRaw] = await Promise.all([
+          fetchComexData("export", historicalPeriod, filters, histExportMetrics, ["ncm"]),
+          fetchComexData("import", historicalPeriod, filters, histImportMetrics, ["ncm"])
+      ]);
+            
       const processedHistData = processAnnualTradeData(histExportDataRaw, histImportDataRaw, submittedNcmCode, currentNcmDetails, updateData);
       setHistoricalTradeData(processedHistData);
 
       if (updateData.year && updateData.month) {
         setLoadingMessage('Carregando dados do ano corrente...');
         const currentYearPeriod: Period = { from: `${updateData.year}-01`, to: `${updateData.year}-${String(updateData.month).padStart(2, '0')}` };
-        const currentExportDataRaw = await fetchComexData("export", currentYearPeriod, filters, histExportMetrics, ["ncm"]);
-        const currentImportDataRaw = await fetchComexData("import", currentYearPeriod, filters, histImportMetrics, ["ncm"]);
+        
+        const [currentExportDataRaw, currentImportDataRaw] = await Promise.all([
+            fetchComexData("export", currentYearPeriod, filters, histExportMetrics, ["ncm"]),
+            fetchComexData("import", currentYearPeriod, filters, histImportMetrics, ["ncm"])
+        ]);
+
         const processedCurrentData = processAnnualTradeData(currentExportDataRaw, currentImportDataRaw, submittedNcmCode, currentNcmDetails, updateData);
         setCurrentYearTradeData(processedCurrentData);
         
@@ -167,12 +175,12 @@ const App: React.FC = () => {
     }
 
     if(sectionVisibility.showCountryData){
-      setLoadingMessage('Carregando dados de exportação por país (2024)...');
-      const expCountries = await fetchCountryData(submittedNcmCode, "export", 2024);
+      setLoadingMessage('Carregando dados por país (2024)...');
+      const [expCountries, impCountries] = await Promise.all([
+          fetchCountryData(submittedNcmCode, "export", 2024),
+          fetchCountryData(submittedNcmCode, "import", 2024)
+      ]);
       setExportCountryData(expCountries);
-
-      setLoadingMessage('Carregando dados de importação por país (2024)...');
-      const impCountries = await fetchCountryData(submittedNcmCode, "import", 2024);
       setImportCountryData(impCountries);
     }
 
@@ -214,15 +222,19 @@ const App: React.FC = () => {
         const histExportMetrics = ["metricFOB", "metricKG", "metricStatistic"];
         const histImportMetrics = ["metricFOB", "metricFreight", "metricInsurance", "metricCIF", "metricKG", "metricStatistic"];
 
-        const histExportDataRaw = await fetchComexData("export", historicalPeriod, filters, histExportMetrics, ["ncm"]);
-        const histImportDataRaw = await fetchComexData("import", historicalPeriod, filters, histImportMetrics, ["ncm"]);
+        const [histExportDataRaw, histImportDataRaw] = await Promise.all([
+            fetchComexData("export", historicalPeriod, filters, histExportMetrics, ["ncm"]),
+            fetchComexData("import", historicalPeriod, filters, histImportMetrics, ["ncm"])
+        ]);
         const processedHistData = processAnnualTradeData(histExportDataRaw, histImportDataRaw, ncmCode, ncmDetails, lastUpdateData);
         setHistoricalTradeData(processedHistData);
 
         if (lastUpdateData.year && lastUpdateData.month) {
           const currentYearPeriod: Period = { from: `${lastUpdateData.year}-01`, to: `${lastUpdateData.year}-${String(lastUpdateData.month).padStart(2, '0')}` };
-          const currentExportDataRaw = await fetchComexData("export", currentYearPeriod, filters, histExportMetrics, ["ncm"]);
-          const currentImportDataRaw = await fetchComexData("import", currentYearPeriod, filters, histImportMetrics, ["ncm"]);
+          const [currentExportDataRaw, currentImportDataRaw] = await Promise.all([
+            fetchComexData("export", currentYearPeriod, filters, histExportMetrics, ["ncm"]),
+            fetchComexData("import", currentYearPeriod, filters, histImportMetrics, ["ncm"])
+          ]);
           const processedCurrentData = processAnnualTradeData(currentExportDataRaw, currentImportDataRaw, ncmCode, ncmDetails, lastUpdateData);
           setCurrentYearTradeData(processedCurrentData);
           
@@ -249,9 +261,11 @@ const App: React.FC = () => {
 
       if (sectionVisibility.showCountryData && importCountryData.length === 0 && exportCountryData.length === 0) {
         setLoadingMessage('Carregando dados por país adicionais...');
-        const expCountries = await fetchCountryData(ncmCode, "export", 2024);
+        const [expCountries, impCountries] = await Promise.all([
+            fetchCountryData(ncmCode, "export", 2024),
+            fetchCountryData(ncmCode, "import", 2024)
+        ]);
         setExportCountryData(expCountries);
-        const impCountries = await fetchCountryData(ncmCode, "import", 2024);
         setImportCountryData(impCountries);
       }
 
@@ -580,12 +594,18 @@ const App: React.FC = () => {
         <p className="text-gray-600 mt-1">Ferramenta para análise de dados de comércio exterior brasileiro.</p>
       </header>
 
+      {!ncmCode && !loading && (
+        <div className="text-center p-10 bg-white shadow-lg rounded-lg mb-6"> {/* Removed mt-6 as header provides mb-8 */}
+          <p className="text-xl text-gray-700">Por favor, insira um código NCM e selecione as seções desejadas no relatório para iniciar a análise.</p>
+        </div>
+      )}
+
       <NcmInput onSubmit={handleNcmSubmit} loading={loading} />
       <ReportCustomizer visibility={sectionVisibility} onVisibilityChange={setSectionVisibility} />
       
       {loading && loadingMessage && <p className="text-center text-blue-600 my-4 p-3 bg-blue-50 rounded-md shadow">{loadingMessage}</p>}
       
-      {ncmCode && <InfoDisplay ncmCode={ncmCode} lastUpdateData={lastUpdateData} ncmDetails={ncmDetails} loading={loading && !lastUpdateData} />}
+      {ncmCode && <InfoDisplay ncmCode={ncmCode} lastUpdateData={lastUpdateData} ncmDetails={ncmDetails} appIsLoading={loading} />} {/* Changed prop name */}
 
 
       {ncmCode && !loading && (
@@ -759,12 +779,6 @@ const App: React.FC = () => {
               </>
             )}
         </Section>
-      )}
-
-      {!ncmCode && !loading && (
-        <div className="text-center p-10 bg-white shadow-lg rounded-lg mt-6">
-          <p className="text-xl text-gray-700">Por favor, insira um código NCM e selecione as seções desejadas no relatório para iniciar a análise.</p>
-        </div>
       )}
       
       {showNoDataMessage && (

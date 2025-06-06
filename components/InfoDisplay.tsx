@@ -7,11 +7,12 @@ interface InfoDisplayProps {
   ncmCode: string | null;
   lastUpdateData: LastUpdateData | null;
   ncmDetails: NcmDetails | null;
-  loading: boolean;
+  appIsLoading: boolean; // Renamed from 'loading' to 'appIsLoading' for clarity
 }
 
-const InfoDisplay: React.FC<InfoDisplayProps> = ({ ncmCode, lastUpdateData, ncmDetails, loading }) => {
-  if (loading && !lastUpdateData && !ncmDetails) { // Only show initial loading if nothing is loaded yet
+const InfoDisplay: React.FC<InfoDisplayProps> = ({ ncmCode, lastUpdateData, ncmDetails, appIsLoading }) => {
+  // Show loading message if the app is globally loading AND specific data for this component is missing
+  if (appIsLoading && (!lastUpdateData || !ncmDetails)) {
     return (
       <div className="p-6 bg-white shadow-lg rounded-lg mb-6 text-center">
         <p className="text-gray-600">Carregando informações básicas...</p>
@@ -19,9 +20,24 @@ const InfoDisplay: React.FC<InfoDisplayProps> = ({ ncmCode, lastUpdateData, ncmD
     );
   }
 
-  if (!ncmCode) return null; // Don't display if no NCM code submitted
+  if (!ncmCode) return null; // Don't display if no NCM code submitted yet
 
   const formattedNcm = formatNcmCode(ncmCode);
+  const hasBasicData = lastUpdateData && lastUpdateData.date && ncmDetails && ncmDetails.description;
+
+  // Show error message ONLY if the app is NOT globally loading AND basic data is still missing
+  if (!appIsLoading && ncmCode && (!lastUpdateData || !ncmDetails || !lastUpdateData.date || !ncmDetails.description)) {
+     return (
+        <div className="p-6 bg-white shadow-lg rounded-lg mb-6 space-y-3">
+            <p className="text-md text-red-500">
+                Não foi possível carregar todas as informações básicas para o NCM {formattedNcm}.
+                { !lastUpdateData?.date && " (Data da última atualização indisponível)"}
+                { !ncmDetails?.description && " (Descrição do NCM indisponível)"}
+            </p>
+        </div>
+     );
+  }
+
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg mb-6 space-y-3">
@@ -42,9 +58,7 @@ const InfoDisplay: React.FC<InfoDisplayProps> = ({ ncmCode, lastUpdateData, ncmD
           </p>
         </>
       )}
-      {(!lastUpdateData || !ncmDetails) && !loading && ncmCode && (
-         <p className="text-md text-red-500">Não foi possível carregar todas as informações básicas para o NCM {formattedNcm}.</p>
-      )}
+      {/* A mensagem de erro agora é tratada acima, de forma mais precisa */}
     </div>
   );
 };
