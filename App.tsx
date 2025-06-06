@@ -9,7 +9,9 @@ import CombinedTradeBalanceChart from './components/charts/CombinedTradeBalanceC
 import FileUpload from './components/FileUpload.tsx';
 import Section from './components/Section.tsx';
 import ReportCustomizer from './components/ReportCustomizer.tsx';
-import RollingSumTooltip from './components/charts/RollingSumTooltip.tsx'; // Import the new tooltip
+import RollingSumTooltip from './components/charts/RollingSumTooltip.tsx';
+import SurgeAnalysisConfigurator from './components/SurgeAnalysisConfigurator.tsx'; // Novo
+import SurgeAnalysisDisplay from './components/SurgeAnalysisDisplay.tsx'; // Novo
 
 // Service imports
 import { 
@@ -31,7 +33,8 @@ import {
   processNfeSalesData,
   processNfeCnaData,
   ensureVendasInternas,
-  processRollingSumImportData
+  processRollingSumImportData,
+  analyzeImportSurge // Novo
 } from './utils/dataProcessing.ts';
 import { formatIntegerPtBR, formatDecimalPtBR, formatNcmCode, parseApiNumber } from './utils/formatting.ts';
 // Type imports
@@ -39,7 +42,8 @@ import {
   LastUpdateData, NcmDetails, ProcessedTradeData, ComexStatRecord, ApiFilter, Period, 
   CountryDataRecord, ChartDataPoint, CgimNcmInfo, EntityContactInfo, NfeData,
   YearSummaryData, FormattedNfeSalesData, FormattedNfeCnaData, SectionVisibility,
-  RollingSumDataPoint, MonthlyComexStatRecord
+  RollingSumDataPoint, MonthlyComexStatRecord,
+  SurgeAnalysisConfig, SurgeAnalysisResult // Novo
 } from './types.ts';
 
 const initialSectionVisibility: SectionVisibility = {
@@ -50,11 +54,10 @@ const initialSectionVisibility: SectionVisibility = {
   showRollingSumImportChart: true,
   showCountryData: true,
   showExcelAnalysis: true,
+  showSurgeAnalysis: true, // Nova seção
 };
 
 const App: React.FC = () => {
-  // console.log('App component started'); 
-
   const [ncmCode, setNcmCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
@@ -69,14 +72,15 @@ const App: React.FC = () => {
 
   const [importSummary, setImportSummary] = useState<YearSummaryData[]>([]);
   const [exportSummary, setExportSummary] = useState<YearSummaryData[]>([]);
-
+  
+  // Raw monthly data state
+  const [rawMonthlyImportData, setRawMonthlyImportData] = useState<MonthlyComexStatRecord[]>([]);
   const [rollingSumImportData, setRollingSumImportData] = useState<RollingSumDataPoint[]>([]);
-  const [monthlyApiDataIssueForRollingSum, setMonthlyApiDataIssueForRollingSum] = useState<boolean>(false);
+  const [monthlyApiDataIssue, setMonthlyApiDataIssue] = useState<boolean>(false);
 
   const [importCountryData, setImportCountryData] = useState<CountryDataRecord[]>([]);
   const [exportCountryData, setExportCountryData] = useState<CountryDataRecord[]>([]);
   
-  // Excel data states
   const [cgimFile, setCgimFile] = useState<File | null>(null);
   const [nfeFile, setNfeFile] = useState<File | null>(null);
   const [parsedCgimData, setParsedCgimData] = useState<CgimNcmInfo | null>(null);
@@ -87,6 +91,11 @@ const App: React.FC = () => {
 
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(initialSectionVisibility);
 
+  // States for Surge Analysis
+  const [surgeAnalysisResult, setSurgeAnalysisResult] = useState<SurgeAnalysisResult | null>(null);
+  const [surgeCalculationLoading, setSurgeCalculationLoading] = useState<boolean>(false);
+
+
   const resetStateForNewNcm = () => {
     setLastUpdateData(null);
     setNcmDetails(null);
@@ -96,8 +105,9 @@ const App: React.FC = () => {
     setResumedTradeData([]);
     setImportSummary([]);
     setExportSummary([]);
+    setRawMonthlyImportData([]); // Reset raw monthly data
     setRollingSumImportData([]); 
-    setMonthlyApiDataIssueForRollingSum(false);
+    setMonthlyApiDataIssue(false);
     setImportCountryData([]);
     setExportCountryData([]);
     setParsedCgimData(null);
@@ -105,6 +115,7 @@ const App: React.FC = () => {
     setParsedNfeDataForNcm([]);
     setNfeSalesTable([]);
     setNfeCnaTable([]);
+    setSurgeAnalysisResult(null); // Reset surge analysis result
   };
   
   const handleNcmSubmit = async (submittedNcmCode: string) => {
@@ -113,7 +124,6 @@ const App: React.FC = () => {
     resetStateForNewNcm();
 
     setLoadingMessage('Carregando dados básicos do NCM...');
-    // Fetch these first and together
     const [updateData, desc, unit] = await Promise.all([
       fetchLastUpdateData(),
       fetchNcmDescription(submittedNcmCode),
@@ -125,11 +135,33 @@ const App: React.FC = () => {
 
     const filters: ApiFilter[] = [{ filter: "ncm", values: [submittedNcmCode] }];
     
+    // Fetch all monthly data from 2019 up to API's last update.
+    // This will be used by both Rolling Sum and Surge Analysis.
+    if (updateData.year && updateData.month) {
+        setLoadingMessage('Carregando dados mensais (base para acumulado e surto)...');
+        const monthlyPeriod: Period = { from: "2019-01", to: `${updateData.year}-${String(updateData.month).padStart(2, '0')}` };
+        const fetchedMonthlyData = await fetchMonthlyComexData("import", monthlyPeriod, filters, ["metricFOB", "metricKG"]);
+        
+        if (fetchedMonthlyData && fetchedMonthlyData.length > 0) {
+            setRawMonthlyImportData(fetchedMonthlyData);
+            setMonthlyApiDataIssue(false);
+            if (sectionVisibility.showRollingSumImportChart) {
+                const processedRollingData = processRollingSumImportData(fetchedMonthlyData);
+                setRollingSumImportData(processedRollingData);
+            }
+        } else {
+            setRawMonthlyImportData([]);
+            setMonthlyApiDataIssue(true);
+            if (sectionVisibility.showRollingSumImportChart) setRollingSumImportData([]);
+        }
+    }
+
+
     if (sectionVisibility.showFullHistoricalData || sectionVisibility.showResumedHistoricalData || sectionVisibility.showAnnualVariationSummary || sectionVisibility.showAnnualCharts) {
       const historicalToYear = updateData.year ? updateData.year -1 : new Date().getFullYear() -1;
       const historicalPeriod: Period = { from: "2004-01", to: `${historicalToYear}-12` };
       
-      setLoadingMessage('Carregando dados históricos...');
+      setLoadingMessage('Carregando dados históricos anuais...');
       const histExportMetrics = ["metricFOB", "metricKG", "metricStatistic"];
       const histImportMetrics = ["metricFOB", "metricFreight", "metricInsurance", "metricCIF", "metricKG", "metricStatistic"];
       
@@ -142,7 +174,7 @@ const App: React.FC = () => {
       setHistoricalTradeData(processedHistData);
 
       if (updateData.year && updateData.month) {
-        setLoadingMessage('Carregando dados do ano corrente...');
+        setLoadingMessage('Carregando dados do ano corrente (anualizado)...');
         const currentYearPeriod: Period = { from: `${updateData.year}-01`, to: `${updateData.year}-${String(updateData.month).padStart(2, '0')}` };
         
         const [currentExportDataRaw, currentImportDataRaw] = await Promise.all([
@@ -183,21 +215,6 @@ const App: React.FC = () => {
       setExportCountryData(expCountries);
       setImportCountryData(impCountries);
     }
-
-    if (sectionVisibility.showRollingSumImportChart && updateData.year && updateData.month) {
-      setLoadingMessage('Carregando dados mensais para gráfico de acumulado...');
-      const monthlyPeriod: Period = { from: "2019-01", to: `${updateData.year}-${String(updateData.month).padStart(2, '0')}` };
-      const monthlyImportApiData: MonthlyComexStatRecord[] = await fetchMonthlyComexData("import", monthlyPeriod, filters, ["metricFOB", "metricKG"]);
-      // console.log("App.tsx handleNcmSubmit: Fetched monthlyImportApiData:", monthlyImportApiData); 
-      if (monthlyImportApiData && monthlyImportApiData.length > 0) {
-        setMonthlyApiDataIssueForRollingSum(false);
-        const processedRollingData = processRollingSumImportData(monthlyImportApiData);
-        setRollingSumImportData(processedRollingData);
-      } else {
-        setMonthlyApiDataIssueForRollingSum(true);
-        setRollingSumImportData([]); 
-      }
-    }
     
     if (sectionVisibility.showExcelAnalysis) {
         if (cgimFile) await handleCgimFileUpload(cgimFile, submittedNcmCode, true); 
@@ -215,8 +232,30 @@ const App: React.FC = () => {
       setLoading(true); 
       const filters: ApiFilter[] = [{ filter: "ncm", values: [ncmCode] }];
 
+      // Fetch raw monthly data if not already fetched
+      if (rawMonthlyImportData.length === 0 && lastUpdateData.year && lastUpdateData.month) {
+        setLoadingMessage('Carregando dados mensais (base para acumulado e surto)...');
+        const monthlyPeriod: Period = { from: "2019-01", to: `${lastUpdateData.year}-${String(lastUpdateData.month).padStart(2, '0')}` };
+        const fetchedMonthlyData = await fetchMonthlyComexData("import", monthlyPeriod, filters, ["metricFOB", "metricKG"]);
+        if (fetchedMonthlyData && fetchedMonthlyData.length > 0) {
+            setRawMonthlyImportData(fetchedMonthlyData);
+            setMonthlyApiDataIssue(false);
+        } else {
+            setRawMonthlyImportData([]);
+            setMonthlyApiDataIssue(true);
+        }
+      }
+      
+      // Process rolling sum if section is visible AND raw monthly data is available AND rolling sum data is not yet processed
+      if (sectionVisibility.showRollingSumImportChart && rawMonthlyImportData.length > 0 && rollingSumImportData.length === 0) {
+          setLoadingMessage('Processando dados para gráfico de acumulado...');
+          const processedRollingData = processRollingSumImportData(rawMonthlyImportData);
+          setRollingSumImportData(processedRollingData);
+      }
+
+
       if ((sectionVisibility.showFullHistoricalData || sectionVisibility.showResumedHistoricalData || sectionVisibility.showAnnualVariationSummary || sectionVisibility.showAnnualCharts) && combinedTradeData.length === 0) {
-        setLoadingMessage('Carregando dados históricos/atuais adicionais...');
+        setLoadingMessage('Carregando dados históricos/atuais anuais...');
         const historicalToYear = lastUpdateData.year ? lastUpdateData.year -1 : new Date().getFullYear() -1;
         const historicalPeriod: Period = { from: "2004-01", to: `${historicalToYear}-12` };
         const histExportMetrics = ["metricFOB", "metricKG", "metricStatistic"];
@@ -260,28 +299,13 @@ const App: React.FC = () => {
       }
 
       if (sectionVisibility.showCountryData && importCountryData.length === 0 && exportCountryData.length === 0) {
-        setLoadingMessage('Carregando dados por país adicionais...');
+        setLoadingMessage('Carregando dados por país...');
         const [expCountries, impCountries] = await Promise.all([
             fetchCountryData(ncmCode, "export", 2024),
             fetchCountryData(ncmCode, "import", 2024)
         ]);
         setExportCountryData(expCountries);
         setImportCountryData(impCountries);
-      }
-
-      if (sectionVisibility.showRollingSumImportChart && rollingSumImportData.length === 0 && lastUpdateData.year && lastUpdateData.month) {
-        setLoadingMessage('Carregando dados mensais para gráfico de acumulado...');
-        const monthlyPeriod: Period = { from: "2019-01", to: `${lastUpdateData.year}-${String(lastUpdateData.month).padStart(2, '0')}` };
-        const monthlyImportApiData: MonthlyComexStatRecord[] = await fetchMonthlyComexData("import", monthlyPeriod, filters, ["metricFOB", "metricKG"]);
-        // console.log("App.tsx useEffect: Fetched monthlyImportApiData:", monthlyImportApiData); 
-         if (monthlyImportApiData && monthlyImportApiData.length > 0) {
-           setMonthlyApiDataIssueForRollingSum(false);
-           const processedRollingData = processRollingSumImportData(monthlyImportApiData);
-           setRollingSumImportData(processedRollingData);
-         } else {
-            setMonthlyApiDataIssueForRollingSum(true);
-            setRollingSumImportData([]); 
-         }
       }
       
       if(sectionVisibility.showExcelAnalysis) {
@@ -365,6 +389,36 @@ const App: React.FC = () => {
     setLoadingMessage('');
     setLoading(false);
   }, [ncmCode, parsedNfeDataForNcm]);
+
+  const handleCalculateSurge = useCallback((config: SurgeAnalysisConfig) => {
+    if (!rawMonthlyImportData || rawMonthlyImportData.length === 0) {
+      setSurgeAnalysisResult({
+        error: "Dados mensais não estão disponíveis. Verifique se o NCM foi carregado e a API retornou dados.",
+        currentPeriod: {} as any, previousPeriods: [], averagePreviousKg: 0, percentageChange: 0, isSurge: false
+      });
+      return;
+    }
+    setSurgeCalculationLoading(true);
+    try {
+      const result = analyzeImportSurge(
+        rawMonthlyImportData,
+        config.startYear,
+        config.startMonth,
+        config.endYear,
+        config.endMonth,
+        lastUpdateData
+      );
+      setSurgeAnalysisResult(result);
+    } catch (e) {
+      console.error("Error during surge analysis calculation:", e);
+      setSurgeAnalysisResult({
+        error: `Erro ao calcular análise de surto: ${(e as Error).message}`,
+        currentPeriod: {} as any, previousPeriods: [], averagePreviousKg: 0, percentageChange: 0, isSurge: false
+      });
+    }
+    setSurgeCalculationLoading(false);
+  }, [rawMonthlyImportData, lastUpdateData]);
+
 
   // Table definitions
   const tradeTableColumns = [
@@ -454,7 +508,97 @@ const App: React.FC = () => {
     'representatividadeFOB': (v:number) => formatDecimalPtBR(v) + '%',
     'representatividadeKG': (v:number) => formatDecimalPtBR(v) + '%',
   };
+
+  const cgimNcmInfoColumns = [
+    { key: 'NCM', header: 'NCM', LTR: true },
+    { key: 'Departamento Responsável', header: 'Departamento Responsável', LTR: true },
+    { key: 'Coordenação-Geral Responsável', header: 'Coordenação-Geral Responsável', LTR: true },
+    { key: 'Agrupamento', header: 'Agrupamento', LTR: true },
+    { key: 'Setores', header: 'Setores', LTR: true },
+    { key: 'Subsetores', header: 'Subsetores', LTR: true },
+    { key: 'Produtos', header: 'Produtos', LTR: true },
+  ];
+
+  const entityContactsColumns = [
+    { key: 'Aba', header: 'Aba', LTR: true },
+    { key: 'NCM', header: 'NCM', LTR: true },
+    { key: 'Sigla Entidade', header: 'Sigla Entidade', LTR: true },
+    { key: 'Entidade', header: 'Entidade', LTR: true },
+    { key: 'Nome do Dirigente', header: 'Nome do Dirigente', LTR: true },
+    { key: 'Cargo', header: 'Cargo', LTR: true },
+    { key: 'E-mail', header: 'E-mail', LTR: true },
+    { key: 'Telefone', header: 'Telefone', LTR: true },
+    { key: 'Celular', header: 'Celular', LTR: true },
+    { key: 'Contato Importante', header: 'Contato Importante', LTR: true },
+    { key: 'Cargo (Contato Importante)', header: 'Cargo (Contato Importante)', LTR: true },
+    { key: 'E-mail (Contato Importante)', header: 'E-mail (Contato Importante)', LTR: true },
+    { key: 'Telefone (Contato Importante)', header: 'Telefone (Contato Importante)', LTR: true },
+    { key: 'Celular (Contato Importante)', header: 'Celular (Contato Importante)', LTR: true },
+  ];
   
+  const nfeFullDataColumns = [
+    { key: 'ano', header: 'Ano', LTR: true },
+    { key: 'ncm_8d', header: 'NCM', LTR: true },
+    { key: 'valor_producao', header: 'Valor Produção' },
+    { key: 'qtd_tributavel_producao', header: 'Qtd Prod. Tributável' },
+    { key: 'valor_exp', header: 'Valor Exp.' },
+    { key: 'qtd_tributavel_exp', header: 'Qtd Exp. Tributável' },
+    { key: 'valor_cif_imp_dolar', header: 'Valor Imp. CIF (US$)' },
+    { key: 'qtd_tributavel_imp', header: 'Qtd Imp. Tributável' },
+    { key: 'cambio_dolar_medio', header: 'Câmbio Médio (R$/US$)' },
+    { key: 'valor_cif_imp_reais', header: 'Valor Imp. CIF (R$)' },
+    { key: 'coeficiente_penetracao_imp_valor', header: 'Coef. Pen. Imp (Valor)' },
+    { key: 'coeficiente_penetracao_imp_qtd', header: 'Coef. Pen. Imp (Qtd)' },
+    { key: 'coeficiente_exp_valor', header: 'Coef. Exp (Valor)' },
+    { key: 'coeficiente_exp_qtd', header: 'Coef. Exp (Qtd)' },
+    { key: 'consumo_nacional_aparente_valor', header: 'CNA (Valor)' },
+    { key: 'consumo_nacional_aparente_qtd', header: 'CNA (Qtd)' },
+    { key: 'disponibilidade_total_valor', header: 'Disp. Total (Valor)' },
+    { key: 'disponibilidade_total_qtd', header: 'Disp. Total (Qtd)' },
+    { key: 'Vendas internas (KG)', header: 'Vendas Internas (KG)' },
+  ];
+
+  const nfeFullDataFormatters: Record<string, (value: any) => string> = {
+    'valor_producao': formatIntegerPtBR,
+    'qtd_tributavel_producao': formatIntegerPtBR,
+    'valor_exp': formatIntegerPtBR,
+    'qtd_tributavel_exp': formatIntegerPtBR,
+    'valor_cif_imp_dolar': formatIntegerPtBR,
+    'qtd_tributavel_imp': formatIntegerPtBR,
+    'cambio_dolar_medio': formatDecimalPtBR,
+    'valor_cif_imp_reais': formatIntegerPtBR,
+    'coeficiente_penetracao_imp_valor': formatDecimalPtBR,
+    'coeficiente_penetracao_imp_qtd': formatDecimalPtBR,
+    'coeficiente_exp_valor': formatDecimalPtBR,
+    'coeficiente_exp_qtd': formatDecimalPtBR,
+    'consumo_nacional_aparente_valor': formatIntegerPtBR,
+    'consumo_nacional_aparente_qtd': formatIntegerPtBR,
+    'disponibilidade_total_valor': formatIntegerPtBR,
+    'disponibilidade_total_qtd': formatIntegerPtBR,
+    'Vendas internas (KG)': formatIntegerPtBR,
+  };
+  
+  const nfeSalesTableColumns = [
+    { key: 'ano', header: 'Ano', LTR: true },
+    { key: 'Vendas totais (Kg)', header: 'Vendas Totais (Kg)', LTR: true },
+    { key: 'Δ Vendas totais (%)', header: 'Δ Vendas Totais (%)', LTR: true },
+    { key: 'Vendas internas (KG)', header: 'Vendas Internas (KG)', LTR: true },
+    { key: 'Δ Vendas internas (%)', header: 'Δ Vendas Internas (%)', LTR: true },
+    { key: 'Exportações (Kg)', header: 'Exportações (Kg)', LTR: true },
+    { key: 'Δ Exportações (%)', header: 'Δ Exportações (%)', LTR: true },
+  ];
+
+  const nfeCnaTableColumns = [
+    { key: 'ano', header: 'Ano', LTR: true },
+    { key: 'Vendas internas (KG)', header: 'Vendas Internas (KG)', LTR: true },
+    { key: 'Δ Vendas internas (%)', header: 'Δ Vendas Internas (%)', LTR: true },
+    { key: 'Importações (Kg)', header: 'Importações (Kg)', LTR: true },
+    { key: 'Δ Importações (%)', header: 'Δ Importações (%)', LTR: true },
+    { key: 'CNA (Kg)', header: 'CNA (Kg)', LTR: true },
+    { key: 'Δ CNA (%)', header: 'Δ CNA (%)', LTR: true },
+    { key: 'Coeficiente de importação (%)', header: 'Coeficiente de Importação (%)', LTR: true },
+  ];
+
   // Chart data preparation
   const chartDataKg = combinedTradeData
     .filter(d => parseInt(d.year.substring(0,4)) >= 2010)
@@ -488,69 +632,10 @@ const App: React.FC = () => {
   }));
   
   const chartDataForRollingSumKg: ChartDataPoint[] = rollingSumImportData.map(d => ({
-    name: d.yearMonth, // This is 'YYYY-MM'
+    name: d.yearMonth, 
     rollingKG: d.rollingKG,
   }));
-  // console.log("App.tsx render: chartDataForRollingSumKg:", chartDataForRollingSumKg); 
 
-  // Excel table definitions
-  const cgimNcmInfoColumns = [
-    {key: 'Departamento Responsável', header: 'Depto. Responsável', LTR: true},
-    {key: 'Coordenação-Geral Responsável', header: 'Coord. Geral Responsável', LTR: true},
-    {key: 'Agrupamento', header: 'Agrupamento', LTR: true},
-    {key: 'Setores', header: 'Setores', LTR: true},
-    {key: 'Subsetores', header: 'Subsetores', LTR: true},
-    {key: 'Produtos', header: 'Produtos', LTR: true},
-  ];
-
-  const entityContactsColumns = [
-      {key: 'Aba', header: 'Origem (Aba)', LTR: true},
-      {key: 'Sigla Entidade', header: 'Sigla', LTR: true},
-      {key: 'Entidade', header: 'Entidade', LTR: true},
-      {key: 'Nome do Dirigente', header: 'Dirigente', LTR: true},
-      {key: 'Cargo', header: 'Cargo Dirigente', LTR: true},
-      {key: 'E-mail', header: 'E-mail Dirigente', LTR: true},
-      {key: 'Telefone', header: 'Telefone Dirigente', LTR: true},
-  ];
-  
-  const nfeFullDataColumns = [
-    {key: 'ano', header: 'Ano', LTR: true},
-    {key: 'valor_producao', header: 'Valor Produção'},
-    {key: 'qtd_tributavel_producao', header: 'Qtd Produção'},
-    {key: 'valor_exp', header: 'Valor Exp'},
-    {key: 'qtd_tributavel_exp', header: 'Qtd Exp'},
-    {key: 'Vendas internas (KG)', header: 'Vendas Internas (KG)'},
-    {key: 'valor_cif_imp_dolar', header: 'Valor Imp (CIF USD)'},
-    {key: 'qtd_tributavel_imp', header: 'Qtd Imp'},
-    {key: 'consumo_nacional_aparente_qtd', header: 'CNA (Qtd)'},
-    {key: 'coeficiente_penetracao_imp_qtd', header: 'Coef. Penetração Imp (Qtd)'},
-  ];
-  const nfeFullDataFormatters = Object.fromEntries(
-      nfeFullDataColumns.filter(c => c.key !=='ano')
-          .map(c => [c.key, (v: any) => c.key.includes('coeficiente') ? formatDecimalPtBR(parseApiNumber(v) * 100)+'%' : formatIntegerPtBR(parseApiNumber(v))])
-  );
-
-  const nfeSalesTableColumns = [
-    {key: 'ano', header: 'Ano', LTR: true},
-    {key: 'Vendas totais (Kg)', header: 'Vendas Totais (Kg)'},
-    {key: 'Δ Vendas totais (%)', header: 'Var. (%) Total'},
-    {key: 'Vendas internas (KG)', header: 'Vendas Internas (KG)'},
-    {key: 'Δ Vendas internas (%)', header: 'Var. (%) Internas'},
-    {key: 'Exportações (Kg)', header: 'Exportações (Kg)'},
-    {key: 'Δ Exportações (%)', header: 'Var. (%) Exp.'},
-  ];
-
-  const nfeCnaTableColumns = [
-    {key: 'ano', header: 'Ano', LTR: true},
-    {key: 'Vendas internas (KG)', header: 'Vendas Internas (KG)'},
-    {key: 'Δ Vendas internas (%)', header: 'Var. (%) Internas'},
-    {key: 'Importações (Kg)', header: 'Importações (Kg)'},
-    {key: 'Δ Importações (%)', header: 'Var. (%) Imp.'},
-    {key: 'CNA (Kg)', header: 'CNA (Kg)'},
-    {key: 'Δ CNA (%)', header: 'Var. (%) CNA'},
-    {key: 'Coeficiente de importação (%)', header: 'Coef. Imp (%)'},
-  ];
-  // Chart fill color functions
   const barChartColors = (data: any[], index: number) => {
     if (index === data.length - 2) return 'sandybrown'; 
     if (index === data.length - 1) return 'darksalmon'; 
@@ -568,19 +653,19 @@ const App: React.FC = () => {
       (!sectionVisibility.showFullHistoricalData && !sectionVisibility.showResumedHistoricalData && !sectionVisibility.showAnnualVariationSummary && !sectionVisibility.showAnnualCharts) || 
       combinedTradeData.length === 0
     ) &&
-    (!sectionVisibility.showRollingSumImportChart || (rollingSumImportData.length === 0 && !monthlyApiDataIssueForRollingSum)) && // Adjusted condition
+    (!sectionVisibility.showRollingSumImportChart || (rollingSumImportData.length === 0 && !monthlyApiDataIssue)) &&
     (!sectionVisibility.showCountryData || (importCountryData.length === 0 && exportCountryData.length === 0)) &&
     (!sectionVisibility.showExcelAnalysis || (
       (!cgimFile || (!parsedCgimData && parsedEntityContacts.length === 0)) &&
       (!nfeFile || parsedNfeDataForNcm.length === 0)
     )) &&
-    // Check if any API-dependent section was selected and resulted in no data (excluding rolling sum if API issue)
+    (!sectionVisibility.showSurgeAnalysis || !surgeAnalysisResult || surgeAnalysisResult.error) && // Added surge
     (
       (sectionVisibility.showFullHistoricalData && combinedTradeData.length === 0) ||
       (sectionVisibility.showResumedHistoricalData && resumedTradeData.length === 0) ||
       (sectionVisibility.showAnnualVariationSummary && importSummary.length === 0 && exportSummary.length === 0) ||
       (sectionVisibility.showAnnualCharts && combinedTradeData.length === 0) ||
-      (sectionVisibility.showRollingSumImportChart && rollingSumImportData.length === 0 && !monthlyApiDataIssueForRollingSum) || // Adjusted
+      (sectionVisibility.showRollingSumImportChart && rollingSumImportData.length === 0 && !monthlyApiDataIssue) || 
       (sectionVisibility.showCountryData && importCountryData.length === 0 && exportCountryData.length === 0)
     );
 
@@ -595,7 +680,7 @@ const App: React.FC = () => {
       </header>
 
       {!ncmCode && !loading && (
-        <div className="text-center p-10 bg-white shadow-lg rounded-lg mb-6"> {/* Removed mt-6 as header provides mb-8 */}
+        <div className="text-center p-10 bg-white shadow-lg rounded-lg">
           <p className="text-xl text-gray-700">Por favor, insira um código NCM e selecione as seções desejadas no relatório para iniciar a análise.</p>
         </div>
       )}
@@ -605,7 +690,7 @@ const App: React.FC = () => {
       
       {loading && loadingMessage && <p className="text-center text-blue-600 my-4 p-3 bg-blue-50 rounded-md shadow">{loadingMessage}</p>}
       
-      {ncmCode && <InfoDisplay ncmCode={ncmCode} lastUpdateData={lastUpdateData} ncmDetails={ncmDetails} appIsLoading={loading} />} {/* Changed prop name */}
+      {ncmCode && <InfoDisplay ncmCode={ncmCode} lastUpdateData={lastUpdateData} ncmDetails={ncmDetails} appIsLoading={loading} />}
 
 
       {ncmCode && !loading && (
@@ -681,7 +766,7 @@ const App: React.FC = () => {
 
           {sectionVisibility.showRollingSumImportChart && (
             <Section title="Gráfico de Importação Acumulada (12 Meses)" defaultOpen={true}>
-              {chartDataForRollingSumKg.length > 0 ? (
+              {rawMonthlyImportData.length > 0 && !monthlyApiDataIssue ? (
                 <SimpleBarChart
                   data={chartDataForRollingSumKg} 
                   xAxisKey="name" 
@@ -689,35 +774,37 @@ const App: React.FC = () => {
                   title={`Importação Acumulada (KG) nos Últimos 12 Meses - NCM ${formatNcmCode(ncmCode!)}`}
                   yAxisLabel="Quantidade Acumulada (KG)"
                   fillColor="steelblue"
-                  customTooltip={<RollingSumTooltip />} // Use the custom tooltip
+                  customTooltip={<RollingSumTooltip />}
                   showLegend={false}
                 />
-              ) : monthlyApiDataIssueForRollingSum ? (
+              ) : monthlyApiDataIssue ? (
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-md text-center">
                   <p className="text-orange-700 font-semibold text-lg">
                     Não foi possível gerar o gráfico de importação acumulada.
                   </p>
                   <p className="text-gray-600 mt-2">
-                    A API Comex Stat não retornou dados mensais válidos (com ano e mês corretos)
-                    para o NCM <span className="font-mono bg-gray-200 px-1 rounded">{formatNcmCode(ncmCode!)}</span> e período solicitado.
-                  </p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Isso geralmente ocorre se a API não possui o detalhamento mensal para este NCM específico ou se os dados retornados não puderam ser processados.
-                    Consulte os logs do console do navegador (F12) para verificar os avisos da função `fetchMonthlyComexData`.
+                    A API Comex Stat não retornou dados mensais válidos para o NCM <span className="font-mono bg-gray-200 px-1 rounded">{formatNcmCode(ncmCode!)}</span>.
                   </p>
                 </div>
-              ) : (
-                 <SimpleBarChart /* Render with empty data to show its internal "no data" message */
+              ) : ( // Case when rawMonthlyImportData is empty but no API issue flagged (e.g., before first load or if section enabled late)
+                 <SimpleBarChart 
                     data={[]} 
                     xAxisKey="name" 
                     dataKey="rollingKG" 
                     title={`Importação Acumulada (KG) nos Últimos 12 Meses - NCM ${formatNcmCode(ncmCode!)}`}
-                    yAxisLabel="Quantidade Acumulada (KG)"
-                    fillColor="steelblue"
-                    customTooltip={<RollingSumTooltip />} // Also here for consistency if it ever shows due to other logic
-                    showLegend={false}
                   />
               )}
+            </Section>
+          )}
+          
+          {sectionVisibility.showSurgeAnalysis && ncmCode && (
+            <Section title="Análise de Surto de Importação" defaultOpen={true}>
+              <SurgeAnalysisConfigurator 
+                onCalculate={handleCalculateSurge} 
+                isLoading={surgeCalculationLoading}
+                lastUpdateData={lastUpdateData}
+              />
+              <SurgeAnalysisDisplay result={surgeAnalysisResult} isLoading={surgeCalculationLoading} />
             </Section>
           )}
 

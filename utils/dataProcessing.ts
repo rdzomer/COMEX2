@@ -1,5 +1,5 @@
-import { ComexStatRecord, ProcessedTradeData, LastUpdateData, NcmDetails, YearSummaryData, NfeData, FormattedNfeSalesData, FormattedNfeCnaData, MonthlyComexStatRecord, RollingSumDataPoint } from '../types.ts';
-import { formatDecimalPtBR, formatIntegerPtBR, formatPercentagePtBR } from './formatting.ts';
+import { ComexStatRecord, ProcessedTradeData, LastUpdateData, NcmDetails, YearSummaryData, NfeData, FormattedNfeSalesData, FormattedNfeCnaData, MonthlyComexStatRecord, RollingSumDataPoint, SurgeAnalysisPeriodValues, SurgeAnalysisResult } from '../types.ts';
+import { formatDecimalPtBR, formatIntegerPtBR, formatPercentagePtBR, getMonthNamePtBR } from './formatting.ts';
 
 export function processAnnualTradeData(
   exportData: ComexStatRecord[],
@@ -292,8 +292,6 @@ export function processRollingSumImportData(monthlyData: MonthlyComexStatRecord[
       return a.month - b.month;
     });
   
-  // Enhanced logging for sortedFullMonthlyData. Crucial for diagnosing plateaus or unexpected sums.
-  // Examine the 'kg' values for each 'ym' (year-month), especially during periods with issues.
   const dataToLog = sortedFullMonthlyData.map(d => ({ ym: d.yearMonth, kg: d.metricKG }));
   if (dataToLog.length <= 75) {
     console.log("processRollingSumImportData: sortedFullMonthlyData (ALL ENTRIES as data.length <= 75). Expand to see all monthly KG values:", dataToLog);
@@ -345,6 +343,126 @@ export function processRollingSumImportData(monthlyData: MonthlyComexStatRecord[
      console.log(`processRollingSumImportData: No rolling sum data was generated, yet had enough initial monthly points (${sortedFullMonthlyData.length}). This state should be investigated.`);
   }
 
-  // console.log("processRollingSumImportData: Generated", finalFilteredData.length, "final data points for rolling sum chart.");
   return finalFilteredData;
+}
+
+// --- SURGE ANALYSIS FUNCTIONS ---
+
+export function calculatePeriodSumKg(
+  monthlyData: MonthlyComexStatRecord[],
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number
+): number {
+  let sumKg = 0;
+  for (const record of monthlyData) {
+    const recordDate = new Date(record.year, record.month - 1); // Month is 0-indexed
+    const startDate = new Date(startYear, startMonth - 1);
+    const endDate = new Date(endYear, endMonth - 1);
+
+    if (recordDate >= startDate && recordDate <= endDate) {
+      sumKg += record.metricKG || 0;
+    }
+  }
+  return sumKg;
+}
+
+export function analyzeImportSurge(
+  monthlyData: MonthlyComexStatRecord[],
+  currentPeriodStartYear: number,
+  currentPeriodStartMonth: number,
+  currentPeriodEndYear: number,
+  currentPeriodEndMonth: number,
+  lastUpdateData: LastUpdateData | null
+): SurgeAnalysisResult {
+  const createPeriodLabel = (sy: number, sm: number, ey: number, em: number) => 
+    `${getMonthNamePtBR(sm)}/${sy} - ${getMonthNamePtBR(em)}/${ey}`;
+  const createPeriodYm = (y:number, m:number) => `${y}-${String(m).padStart(2, '0')}`;
+
+  // Validate if the requested current period end date is beyond API's last update
+  if (lastUpdateData && lastUpdateData.year !== null && lastUpdateData.month !== null) {
+    const apiLastDate = new Date(lastUpdateData.year, lastUpdateData.month - 1, 1);
+    const requestedEndDate = new Date(currentPeriodEndYear, currentPeriodEndMonth - 1, 1);
+    if (requestedEndDate > apiLastDate) {
+      return {
+        error: `O período final solicitado (${createPeriodYm(currentPeriodEndYear, currentPeriodEndMonth)}) excede a última atualização da API (${createPeriodYm(lastUpdateData.year, lastUpdateData.month)}).`,
+        currentPeriod: {} as SurgeAnalysisPeriodValues,
+        previousPeriods: [],
+        averagePreviousKg: 0,
+        percentageChange: 0,
+        isSurge: false,
+      };
+    }
+  }
+  
+  const currentPeriod: SurgeAnalysisPeriodValues = {
+    periodLabel: createPeriodLabel(currentPeriodStartYear, currentPeriodStartMonth, currentPeriodEndYear, currentPeriodEndMonth),
+    startDate: createPeriodYm(currentPeriodStartYear, currentPeriodStartMonth),
+    endDate: createPeriodYm(currentPeriodEndYear, currentPeriodEndMonth),
+    sumKg: calculatePeriodSumKg(monthlyData, currentPeriodStartYear, currentPeriodStartMonth, currentPeriodEndYear, currentPeriodEndMonth),
+    year: currentPeriodStartYear, // Or a more central year if period spans multiple
+  };
+
+  const previousPeriods: SurgeAnalysisPeriodValues[] = [];
+  for (let i = 1; i <= 3; i++) {
+    const prevStartYear = currentPeriodStartYear - i;
+    const prevEndYear = currentPeriodEndYear - i;
+
+    // Ensure previous periods don't go before 2019 (min year for reliable monthly data)
+    if (prevStartYear < 2019) break; 
+
+    previousPeriods.push({
+      periodLabel: createPeriodLabel(prevStartYear, currentPeriodStartMonth, prevEndYear, currentPeriodEndMonth),
+      startDate: createPeriodYm(prevStartYear, currentPeriodStartMonth),
+      endDate: createPeriodYm(prevEndYear, currentPeriodEndMonth),
+      sumKg: calculatePeriodSumKg(monthlyData, prevStartYear, currentPeriodStartMonth, prevEndYear, currentPeriodEndMonth),
+      year: prevStartYear,
+    });
+  }
+
+  if (previousPeriods.length < 3) {
+    return {
+      error: `Não há dados suficientes para os três períodos anteriores completos (necessários 3 períodos a partir de 2019, ${previousPeriods.length} encontrados).`,
+      currentPeriod,
+      previousPeriods,
+      averagePreviousKg: 0,
+      percentageChange: 0,
+      isSurge: false,
+    };
+  }
+
+  const sumPreviousKg = previousPeriods.reduce((acc, period) => acc + period.sumKg, 0);
+  const averagePreviousKg = sumPreviousKg / previousPeriods.length;
+
+  let percentageChange = 0;
+  if (averagePreviousKg !== 0) {
+    percentageChange = ((currentPeriod.sumKg - averagePreviousKg) / averagePreviousKg) * 100;
+  } else if (currentPeriod.sumKg > 0) {
+    percentageChange = Infinity; // Current has value, average was 0
+  }
+
+  const isSurge = currentPeriod.sumKg >= 1.30 * averagePreviousKg;
+  
+  // Check if all periods have zero sum, which might indicate no data for the NCM in those ranges
+  const allSumsZero = currentPeriod.sumKg === 0 && previousPeriods.every(p => p.sumKg === 0);
+  if(allSumsZero) {
+     return {
+      error: `Nenhum dado de importação (KG) encontrado para o NCM nos períodos selecionados. Verifique se há dados mensais disponíveis para este NCM.`,
+      currentPeriod,
+      previousPeriods,
+      averagePreviousKg: 0,
+      percentageChange: 0,
+      isSurge: false,
+    };
+  }
+
+
+  return {
+    currentPeriod,
+    previousPeriods,
+    averagePreviousKg,
+    percentageChange,
+    isSurge,
+  };
 }

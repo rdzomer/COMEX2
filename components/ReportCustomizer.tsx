@@ -13,9 +13,10 @@ const sectionLabels: Record<SectionKey, string> = {
   showResumedHistoricalData: "Dados Anuais Resumidos (Comex Stat)",
   showAnnualVariationSummary: "Quadros Resumo de Variação Anual",
   showAnnualCharts: "Gráficos Anuais (Comex Stat)",
-  showRollingSumImportChart: "Gráfico de Importação Acumulada (12m)", // Nova opção
+  showRollingSumImportChart: "Gráfico de Importação Acumulada (12m)",
   showCountryData: "Dados por País (2024)",
   showExcelAnalysis: "Análise de Arquivos Excel (Upload)",
+  showSurgeAnalysis: "Análise de Surto de Importação", // Nova seção
 };
 
 const ReportCustomizer: React.FC<ReportCustomizerProps> = ({ visibility, onVisibilityChange }) => {

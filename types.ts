@@ -185,7 +185,33 @@ export interface SectionVisibility {
   showResumedHistoricalData: boolean;
   showAnnualVariationSummary: boolean;
   showAnnualCharts: boolean;
-  showRollingSumImportChart: boolean; // New chart
+  showRollingSumImportChart: boolean;
   showCountryData: boolean;
   showExcelAnalysis: boolean;
+  showSurgeAnalysis: boolean; // Added for Surge Analysis
+}
+
+// Types for Surge Analysis
+export interface SurgeAnalysisConfig {
+  startYear: number;
+  startMonth: number;
+  endYear: number;
+  endMonth: number;
+}
+
+export interface SurgeAnalysisPeriodValues {
+  periodLabel: string; // e.g., "Mar/2024 - Mai/2024"
+  startDate: string; // YYYY-MM
+  endDate: string;   // YYYY-MM
+  sumKg: number;
+  year: number; // Central year of the period for identification
+}
+
+export interface SurgeAnalysisResult {
+  currentPeriod: SurgeAnalysisPeriodValues;
+  previousPeriods: SurgeAnalysisPeriodValues[];
+  averagePreviousKg: number;
+  percentageChange: number;
+  isSurge: boolean;
+  error?: string;
 }
