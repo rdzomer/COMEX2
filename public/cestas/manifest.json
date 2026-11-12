@@ -1,0 +1,43 @@
+{
+ "geradoEm": "2026-11-12T16:30:19.551Z",
+ "atualizacao": {
+  "ano": 2026,
+  "mes": 10,
+  "data": "2026-11-06"
+ },
+ "dicionarioHash": "72a5ad0a2115458d",
+ "dicionarioFonte": "cgim_dinte.xlsx",
+ "chamadasApi": 17,
+ "entidades": [
+  {
+   "id": "ABCOBRE",
+   "rotulo": "ABCOBRE",
+   "ncms": 0,
+   "arquivo": null
+  },
+  {
+   "id": "ABRAFE",
+   "rotulo": "ABRAFE",
+   "ncms": 17,
+   "arquivo": "ABRAFE.json"
+  },
+  {
+   "id": "IBRAM",
+   "rotulo": "IBRAM",
+   "ncms": 0,
+   "arquivo": null
+  },
+  {
+   "id": "SICETEL",
+   "rotulo": "SICETEL",
+   "ncms": 0,
+   "arquivo": null
+  },
+  {
+   "id": "SINDIFER",
+   "rotulo": "SINDIFER",
+   "ncms": 2,
+   "arquivo": "SINDIFER.json"
+  }
+ ]
+}
