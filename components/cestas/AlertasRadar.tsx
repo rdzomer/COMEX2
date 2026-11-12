@@ -18,24 +18,23 @@ const salvarVerificados = (s: Set<string>) => { try { localStorage.setItem(VERIF
 
 interface Props {
   manifest: CestaManifest;
-  entidadeAtual: string;
+  entidadeInicial?: string;
   onOpenNcm: (ncm: string) => void;
 }
 
-const AlertasRadar: React.FC<Props> = ({ manifest, entidadeAtual, onOpenNcm }) => {
+const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm }) => {
   const [arquivo, setArquivo] = useState<AlertasArquivo | null>(null);
   const [erro, setErro] = useState(false);
   const [criterios, setCriterios] = useState<Criterios>(CRITERIOS_PADRAO);
   const [recalculados, setRecalculados] = useState<Alerta[] | null>(null);
   const [recalculando, setRecalculando] = useState(false);
-  const [escopo, setEscopo] = useState<'todas' | 'esta'>('todas');
+  const [entidade, setEntidade] = useState<string>(entidadeInicial || '');
   const [niveis, setNiveis] = useState<Set<Nivel>>(new Set(['alto', 'medio']));
   const [tipos, setTipos] = useState<Set<TipoSinal>>(new Set());
   const [verificados, setVerificados] = useState<Set<string>>(lerVerificados);
   const [mostrarVerificados, setMostrarVerificados] = useState(false);
   const [limite, setLimite] = useState(12);
   const [abrirCriterios, setAbrirCriterios] = useState(false);
-  const [aberto, setAberto] = useState(true);
 
   useEffect(() => { loadAlertas().then(setArquivo).catch(() => setErro(true)); }, []);
 
@@ -56,7 +55,7 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeAtual, onOpenNcm }) =
   const base = recalculados ?? arquivo?.alertas ?? [];
   const periodo = arquivo ? `${arquivo.atualizacao.ano}${String(arquivo.atualizacao.mes).padStart(2, '0')}` : '';
   const chave = (a: Alerta) => `${a.ncm}:${periodo}`;
-  const noEscopo = useMemo(() => base.filter(a => escopo === 'todas' || a.entidades.some(e => e.id === entidadeAtual)), [base, escopo, entidadeAtual]);
+  const noEscopo = useMemo(() => base.filter(a => !entidade || a.entidades.some(e => e.id === entidade)), [base, entidade]);
   const contagem = (lv: Nivel) => noEscopo.filter(a => a.nivel === lv && (mostrarVerificados || !verificados.has(chave(a)))).length;
   const lista = noEscopo.filter(a =>
     niveis.has(a.nivel) &&
@@ -80,16 +79,16 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeAtual, onOpenNcm }) =
   if (!arquivo) return null;
 
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm">
       {/* Cabeçalho chamativo */}
       <div className="flex flex-wrap items-center gap-4 bg-gradient-to-r from-red-600 to-orange-500 px-5 py-4 text-white">
-        <button onClick={() => setAberto(!aberto)} className="flex items-center gap-3 text-left">
+        <div className="flex items-center gap-3 text-left">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl">🚨</span>
           <span>
             <span className="block text-lg font-bold leading-tight">Radar de alertas</span>
             <span className="block text-xs text-white/80">NCMs com comportamento fora do padrão · dados até {getMonthNamePtBR(arquivo.atualizacao.mes)}/{arquivo.atualizacao.ano}</span>
           </span>
-        </button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {(['alto', 'medio', 'atencao'] as Nivel[]).map(lv => (
             <button key={lv} onClick={() => alternar(niveis, lv, setNiveis)}
@@ -99,14 +98,14 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeAtual, onOpenNcm }) =
             </button>
           ))}
         </div>
-        <div className="ml-auto flex items-center gap-1 rounded-lg bg-white/15 p-0.5 text-xs">
-          {([['todas', 'Todas as cestas'], ['esta', 'Cesta selecionada']] as const).map(([v, l]) => (
-            <button key={v} onClick={() => setEscopo(v)} className={`rounded-md px-3 py-1.5 font-semibold ${escopo === v ? 'bg-white text-red-700' : 'text-white/85 hover:text-white'}`}>{l}</button>
-          ))}
-        </div>
+        <select value={entidade} onChange={e => { setEntidade(e.target.value); setLimite(12); }}
+          className="ml-auto rounded-lg border-0 bg-white/95 px-3 py-1.5 text-sm font-semibold text-red-700 focus:outline-none focus:ring-2 focus:ring-white">
+          <option value="">Todas as cestas</option>
+          {manifest.entidades.filter(e => e.arquivo).map(e => <option key={e.id} value={e.id}>{e.rotulo}</option>)}
+        </select>
       </div>
 
-      {aberto && (
+      {(
         <div className="p-5">
           {/* Filtros por tipo de sinal */}
           <div className="flex flex-wrap items-center gap-2">
@@ -239,3 +238,38 @@ function PainelCriterios({ criterios, onChange }: { criterios: Criterios; onChan
 }
 
 export default AlertasRadar;
+
+/** Página própria do radar (#/alertas ou #/alertas/ENTIDADE). */
+export function AlertasPage({ entidadeInicial, onOpenNcm }: { entidadeInicial?: string; onOpenNcm: (n: string) => void }) {
+  const [manifest, setManifest] = useState<CestaManifest | null>(null);
+  const [erro, setErro] = useState(false);
+  useEffect(() => { import('../../utils/cestas.ts').then(m => m.loadCestaManifest()).then(setManifest).catch(() => setErro(true)); }, []);
+  if (erro) return <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Os dados das cestas ainda não foram gerados.</p>;
+  if (!manifest) return <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">Carregando radar…</p>;
+  return <AlertasRadar key={entidadeInicial || ''} manifest={manifest} entidadeInicial={entidadeInicial} onOpenNcm={onOpenNcm} />;
+}
+
+/** Aviso compacto para a página das cestas. */
+export function AvisoAlertas({ entidade, rotulo }: { entidade?: string; rotulo?: string }) {
+  const [arq, setArq] = useState<AlertasArquivo | null>(null);
+  useEffect(() => { loadAlertas().then(setArq).catch(() => {}); }, []);
+  if (!arq) return null;
+  const relevantes = arq.alertas.filter(a => a.nivel !== 'atencao');
+  if (!relevantes.length) return null;
+  const altos = relevantes.filter(a => a.nivel === 'alto').length;
+  const daCesta = entidade ? relevantes.filter(a => a.entidades.some(e => e.id === entidade)) : [];
+  const altosCesta = daCesta.filter(a => a.nivel === 'alto').length;
+  return (
+    <a href={`#/alertas${entidade && daCesta.length ? `/${entidade}` : ''}`}
+      className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-red-200 bg-gradient-to-r from-red-50 to-orange-50 px-4 py-2.5 text-sm transition hover:border-red-300 hover:shadow-sm">
+      <span className="relative flex h-2.5 w-2.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+      </span>
+      <span className="font-semibold text-red-700">Radar de alertas:</span>
+      <span className="text-slate-700"><b>{altos}</b> alertas altos e <b>{relevantes.length - altos}</b> médios nas cestas</span>
+      {rotulo && daCesta.length > 0 && <span className="text-slate-700">· <b>{daCesta.length}</b> em {rotulo}{altosCesta ? ` (${altosCesta} altos)` : ''}</span>}
+      <span className="ml-auto font-semibold text-red-700">Ver radar →</span>
+    </a>
+  );
+}

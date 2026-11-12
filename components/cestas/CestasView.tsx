@@ -10,7 +10,7 @@ import { AnnualBarChart, RollingSumChart, CountryTreemap, COLORS } from '../char
 import { ChartCard, KpiCard, Button, SegmentedControl, Swatch, Icons } from '../ui.tsx';
 import DataTable, { VarCell } from '../DataTable.tsx';
 import Section from '../Section.tsx';
-import AlertasRadar from './AlertasRadar.tsx';
+import { AvisoAlertas } from './AlertasRadar.tsx';
 import { loadAlertas } from '../../utils/cestas.ts';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 
@@ -147,7 +147,7 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
 
   return (
     <div>
-      <AlertasRadar manifest={manifest} entidadeAtual={entityId} onOpenNcm={onOpenNcm} />
+      <AvisoAlertas entidade={entityId} rotulo={entity?.rotulo} />
 
       {/* Seleção de entidade */}
       <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
