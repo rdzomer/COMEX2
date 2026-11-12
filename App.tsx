@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import NcmInput from './components/NcmInput.tsx';
 import DataTable, { Column, VarCell } from './components/DataTable.tsx';
 import FileUpload from './components/FileUpload.tsx';
+import ContactCards from './components/ContactCards.tsx';
 import Section from './components/Section.tsx';
 import SurgeAnalysisConfigurator from './components/SurgeAnalysisConfigurator.tsx';
 import SurgeAnalysisDisplay from './components/SurgeAnalysisDisplay.tsx';
@@ -36,7 +37,6 @@ const initialSectionVisibility: SectionVisibility = {
 
 const SOURCE_COMEX = 'Fonte: Comex Stat/MDIC. Elaboração própria.';
 const SOURCE_NFE = 'Fonte: Dados da Nota Fiscal Eletrônica (NF-e) da RFB, disponibilizados pela SECEX.';
-const SOURCE_CGIM = 'Fonte: Arquivo 20241011_NCMs-CGIM-DINTE.xlsx';
 const EXP_IMP = ["metricFOB", "metricKG", "metricStatistic"];
 const IMP_METRICS = ["metricFOB", "metricFreight", "metricInsurance", "metricCIF", "metricKG", "metricStatistic"];
 
@@ -601,7 +601,7 @@ const App: React.FC = () => {
     { id: 'doze-meses', label: '12 meses', show: sectionVisibility.showRollingSumImportChart },
     { id: 'surto', label: 'Surto', show: sectionVisibility.showSurgeAnalysis },
     { id: 'paises', label: 'Países', show: sectionVisibility.showCountryData },
-    { id: 'planilhas', label: 'CGIM e NF-e', show: sectionVisibility.showExcelAnalysis },
+    { id: 'planilhas', label: 'Contatos e NF-e', show: sectionVisibility.showExcelAnalysis },
   ].filter(n => n.show);
 
   const partialNote = partialYear && M ? (
@@ -836,20 +836,16 @@ const App: React.FC = () => {
 
         {/* Planilhas */}
         {ncmCode && !loading && sectionVisibility.showExcelAnalysis && (
-          <Section id="planilhas" title="Competência CGIM, entidades e dados de NF-e" description="Envie as planilhas internas; elas são lidas apenas no seu navegador e não são enviadas a nenhum servidor.">
+          <Section id="planilhas" title="Contatos da entidade e dados de NF-e" description="Envie as planilhas internas; elas são lidas apenas no seu navegador e não são enviadas a nenhum servidor.">
             <div className="grid gap-4 md:grid-cols-2">
               <FileUpload label="Planilha CGIM/DINTE" hint="Ex.: 20241011_NCMs-CGIM-DINTE.xlsx (aba NCMs-CGIM-DINTE e abas das entidades)" onFileUpload={handleCgimFile} loading={fileBusy === 'cgim'} fileName={cgimFile?.name} />
               <FileUpload label="Planilha de NF-e (SECEX/RFB)" hint="Ex.: dados_nfe_2016_2025_ajustado.xlsx (aba Dados)" onFileUpload={handleNfeFile} loading={fileBusy === 'nfe'} fileName={nfeFile?.name} />
             </div>
             {cgimParsed && (
               <>
-                {cgimInfo
-                  ? <DataTable title={`Competência CGIM/DINTE · ${ncmStr}`} data={[cgimInfo]} columns={cgimColumns} source={SOURCE_CGIM} stickyFirstColumn={false} />
-                  : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Produto não é de competência da CGIM.</p>}
                 {entityContacts.length
-                  ? <DataTable title={`Entidades responsáveis · ${ncmStr}`} data={entityContacts} columns={[{ key: 'Aba', header: 'Aba', LTR: true }, ...entityColumnsUsed.map(c => ({ key: c, header: c, LTR: true }))]} source={SOURCE_CGIM} compact />
-                  : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Não há informação sobre a entidade responsável por esse produto na planilha enviada.</p>}
-                {cgimParsed.missingSheets.length > 0 && <p className="text-xs text-slate-500">Abas não encontradas na planilha: {cgimParsed.missingSheets.join(', ')}.</p>}
+                  ? <ContactCards title={`Contatos da entidade responsável · ${ncmStr}`} contacts={entityContacts} />
+                  : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">{cgimInfo ? 'A planilha não traz contato de entidade para esta NCM.' : 'Produto não é de competência da CGIM e não há entidade associada na planilha.'}</p>}
               </>
             )}
             {nfeAll && (
