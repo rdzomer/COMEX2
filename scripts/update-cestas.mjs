@@ -183,3 +183,4 @@ fs.writeFileSync(manifestPath, JSON.stringify({
   entidades: manifestEntities,
 }, null, 1));
 console.log(`Concluído: ${calls} chamadas à API.`);
+if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `atualizado=true\nperiodo=${MM}/${Y}\n`);

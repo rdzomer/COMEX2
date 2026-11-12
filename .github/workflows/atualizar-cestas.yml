@@ -27,6 +27,7 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   atualizar:
@@ -42,10 +43,14 @@ jobs:
       - name: Gerar dicionário (se houver planilha em dados-fonte/)
         run: node scripts/build-dicionario.mjs
       - name: Consultar a API Comex Stat (devagar)
+        id: dados
         env:
           FORCE: ${{ github.event_name == 'push' && '1' || inputs.force && '1' || '0' }}
           ONLY: ${{ inputs.only }}
         run: node scripts/update-cestas.mjs
+      - name: Calcular o radar de alertas
+        if: steps.dados.outputs.atualizado == 'true'
+        run: npx tsx scripts/gerar-alertas.ts resumo-alertas.md
       - name: Salvar no repositório (o Netlify publica sozinho)
         run: |
           git config user.name "github-actions[bot]"
@@ -55,3 +60,8 @@ jobs:
           git commit -m "Atualiza dados das cestas por entidade"
           git pull --rebase origin ${{ github.ref_name }}
           git push
+      - name: Enviar resumo dos alertas por e-mail (aviso no GitHub)
+        if: steps.dados.outputs.atualizado == 'true' && vars.ALERTAS_EMAIL != 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --title "Radar de alertas das cestas — dados até ${{ steps.dados.outputs.periodo }}" --body-file resumo-alertas.md
