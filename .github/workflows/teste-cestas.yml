@@ -32,7 +32,7 @@ jobs:
       - name: Consultar a API Comex Stat (devagar)
         env:
           FORCE: "1"
-          ONLY: "SINDIFER,ABRAFE"
+          ONLY: ""
         run: node scripts/update-cestas.mjs
       - name: Salvar no repositório (o Netlify publica sozinho)
         run: |
