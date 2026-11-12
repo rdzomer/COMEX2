@@ -62,7 +62,7 @@ export function AnnualBarChart({ data, flow, unitLabel, width, height }: SizePro
       : k === 'ytd' ? COLORS.expYtd : k === 'prevYtd' ? COLORS.expPrevYtd : COLORS.exp;
   return (
     <Frame width={width} height={height}>
-      <BarChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 36 }} barCategoryGap="18%">
+      <BarChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 58 }} barCategoryGap="18%">
         <CartesianGrid vertical={false} stroke={COLORS.grid} />
         <XAxis dataKey="name" tick={{ ...AXIS_TICK, fontSize: 10 }} angle={-40} textAnchor="end" interval={0} tickLine={false} axisLine={{ stroke: COLORS.grid }} />
         <YAxis tickFormatter={formatCompactPtBR} tick={AXIS_TICK} tickLine={false} axisLine={false} width={64} />
@@ -87,7 +87,7 @@ export function PriceLineChart({ data, width, height }: SizeProps & { data: { na
   const animate = !width;
   return (
     <Frame width={width} height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 58 }}>
         <CartesianGrid vertical={false} stroke={COLORS.grid} />
         <XAxis dataKey="name" tick={{ ...AXIS_TICK, fontSize: 10 }} angle={-40} textAnchor="end" interval={0} tickLine={false} axisLine={{ stroke: COLORS.grid }} />
         <YAxis tickFormatter={v => formatDecimalPtBR(v)} tick={AXIS_TICK} tickLine={false} axisLine={false} width={64} />
@@ -97,8 +97,8 @@ export function PriceLineChart({ data, width, height }: SizeProps & { data: { na
           ) : null}
         />
         <Legend verticalAlign="top" height={28} iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
-        <Line type="monotone" dataKey="imp" name="Importação" stroke={COLORS.imp} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls isAnimationActive={animate} />
-        <Line type="monotone" dataKey="exp" name="Exportação" stroke={COLORS.exp} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls isAnimationActive={animate} />
+        <Line type="linear" dataKey="imp" name="Importação" stroke={COLORS.imp} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls isAnimationActive={animate} />
+        <Line type="linear" dataKey="exp" name="Exportação" stroke={COLORS.exp} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls isAnimationActive={animate} />
       </LineChart>
     </Frame>
   );
@@ -111,7 +111,7 @@ export function TradeBalanceChart({ data, width, height }: SizeProps & { data: {
   const animate = !width;
   return (
     <Frame width={width} height={height}>
-      <ComposedChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 36 }} barGap={-14} barCategoryGap="22%">
+      <ComposedChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 58 }} barGap={-14} barCategoryGap="22%">
         <CartesianGrid vertical={false} stroke={COLORS.grid} />
         <XAxis dataKey="name" tick={{ ...AXIS_TICK, fontSize: 10 }} angle={-40} textAnchor="end" interval={0} tickLine={false} axisLine={false} />
         <YAxis tickFormatter={formatCompactPtBR} tick={AXIS_TICK} tickLine={false} axisLine={false} width={64} />
@@ -129,7 +129,7 @@ export function TradeBalanceChart({ data, width, height }: SizeProps & { data: {
         <ReferenceLine y={0} stroke="#475569" />
         <Bar dataKey="exp" name="Exportação" fill={COLORS.exp} radius={[4, 4, 0, 0]} barSize={14} isAnimationActive={animate} />
         <Bar dataKey="impNeg" name="Importação" fill={COLORS.imp} radius={[0, 0, 4, 4]} barSize={14} isAnimationActive={animate} />
-        <Line type="monotone" dataKey="balance" name="Balança comercial" stroke={COLORS.balance} strokeWidth={2} dot={{ r: 3, fill: COLORS.balance }} isAnimationActive={animate} />
+        <Line type="linear" dataKey="balance" name="Balança comercial" stroke={COLORS.balance} strokeWidth={2} dot={{ r: 3, fill: COLORS.balance }} isAnimationActive={animate} />
       </ComposedChart>
     </Frame>
   );
@@ -144,7 +144,7 @@ export function RollingSumChart({ data, width, height }: SizeProps & { data: { n
   const ticks = data.filter((_, i) => i % 3 === 0 || i === n - 1).map(d => d.name);
   return (
     <Frame width={width} height={height}>
-      <BarChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 36 }} barCategoryGap="12%">
+      <BarChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 58 }} barCategoryGap="12%">
         <CartesianGrid vertical={false} stroke={COLORS.grid} />
         <XAxis dataKey="name" ticks={ticks} tick={{ ...AXIS_TICK, fontSize: 10 }} angle={-40} textAnchor="end" tickLine={false} axisLine={{ stroke: COLORS.grid }} />
         <YAxis tickFormatter={formatCompactPtBR} tick={AXIS_TICK} tickLine={false} axisLine={false} width={64} />

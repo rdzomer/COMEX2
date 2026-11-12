@@ -755,6 +755,8 @@ const App: React.FC = () => {
                         source="Fonte: Elaboração própria a partir dos dados de Comex Stat." />
                     </div>
                   </div>
+                ) : steps.find(st => st.key === 'monthly')?.status === 'running' ? (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Carregando dados mensais…</p>
                 ) : (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">A API Comex Stat não retornou dados mensais de importação para esta NCM.</p>
                 )}

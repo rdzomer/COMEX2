@@ -64,7 +64,7 @@ const p = (text: string, opts: { italic?: boolean; size?: number } = {}) =>
 const source = (text: string) =>
   new Paragraph({ spacing: { before: 60, after: 240 }, children: [new TextRun({ text, font: FONT, size: 16, color: '595959' })] });
 const heading = (text: string, level: (typeof HeadingLevel)[keyof typeof HeadingLevel]) =>
-  new Paragraph({ heading: level, spacing: { before: 240, after: 120 }, children: [new TextRun({ text, font: FONT, color: '1F3864', bold: true, size: level === HeadingLevel.HEADING_1 ? 28 : 22 })] });
+  new Paragraph({ heading: level, keepNext: true, keepLines: true, spacing: { before: 240, after: 120 }, children: [new TextRun({ text, font: FONT, color: '1F3864', bold: true, size: level === HeadingLevel.HEADING_1 ? 28 : 22 })] });
 
 export async function buildWordReport(title: string, subtitle: string, items: ReportItem[]): Promise<Blob> {
   const children: (Paragraph | Table)[] = [heading(title, HeadingLevel.HEADING_1)];
@@ -92,6 +92,7 @@ export async function buildWordReport(title: string, subtitle: string, items: Re
       children.push(heading(img.heading, HeadingLevel.HEADING_2));
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
+        keepNext: true,
         children: [new ImageRun({ type: 'png', data: img.png, transformation: { width: targetW, height: targetH } })],
       }));
       children.push(source(img.source ?? 'Fonte: Comex Stat/MDIC. Elaboração própria.'));
