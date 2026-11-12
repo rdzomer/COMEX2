@@ -10,6 +10,8 @@ import { AnnualBarChart, RollingSumChart, CountryTreemap, COLORS } from '../char
 import { ChartCard, KpiCard, Button, SegmentedControl, Swatch, Icons } from '../ui.tsx';
 import DataTable, { VarCell } from '../DataTable.tsx';
 import Section from '../Section.tsx';
+import { AvisoAlertas } from './AlertasRadar.tsx';
+import { loadAlertas } from '../../utils/cestas.ts';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 
 const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
@@ -31,6 +33,14 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
   const [countryKey, setCountryKey] = useState<'anterior' | 'atual'>('atual');
   const [countryMetric, setCountryMetric] = useState<'metricFOB' | 'metricKG'>('metricFOB');
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [alertCount, setAlertCount] = useState<Record<string, number>>({});
+  useEffect(() => {
+    loadAlertas().then(f => {
+      const c: Record<string, number> = {};
+      f.alertas.filter(a => a.nivel !== 'atencao').forEach(a => a.entidades.forEach(e => { c[e.id] = (c[e.id] || 0) + 1; }));
+      setAlertCount(c);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     loadCestaManifest().then(m => {
@@ -137,6 +147,8 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
 
   return (
     <div>
+      <AvisoAlertas entidade={entityId} rotulo={entity?.rotulo} />
+
       {/* Seleção de entidade */}
       <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -161,6 +173,7 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${e.id === entityId ? 'bg-brand-500 text-white shadow-sm' : e.arquivo ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'cursor-not-allowed bg-slate-50 text-slate-300'}`}
             >
               {e.rotulo}
+              {alertCount[e.id] ? <span className={`ml-1.5 rounded-full px-1.5 text-[11px] font-bold ${e.id === entityId ? 'bg-white text-red-600' : 'bg-red-500 text-white'}`} title="Alertas altos e médios">{alertCount[e.id]}</span> : null}
             </button>
           ))}
         </div>

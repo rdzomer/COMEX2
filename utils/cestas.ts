@@ -216,3 +216,10 @@ export function countriesFor(data: CestaData, key: 'anterior' | 'atual', flow: F
 }
 
 export type { MonthlySeriesPoint };
+
+// ---------------------------------------------------------------------------
+// Radar de alertas (pré-calculado pela tarefa mensal com os critérios padrão)
+// ---------------------------------------------------------------------------
+import type { Alerta, Criterios } from './alertas.ts';
+export interface AlertasArquivo { geradoEm: string; atualizacao: { ano: number; mes: number }; criterios: Criterios; alertas: Alerta[] }
+export const loadAlertas = () => getJson<AlertasArquivo>('/cestas/alertas.json');

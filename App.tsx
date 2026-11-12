@@ -9,6 +9,7 @@ import SurgeAnalysisDisplay from './components/SurgeAnalysisDisplay.tsx';
 import { ChartCard, KpiCard, Button, SegmentedControl, SectionPicker, Swatch, Icons } from './components/ui.tsx';
 import { AnnualBarChart, PriceLineChart, TradeBalanceChart, RollingSumChart, CountryTreemap, COLORS } from './components/charts/ChartKit.tsx';
 import CestasView from './components/cestas/CestasView.tsx';
+import { AlertasPage } from './components/cestas/AlertasRadar.tsx';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
 
 import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryData } from './services/comexApiService.ts';
@@ -45,11 +46,16 @@ interface Step { key: string; label: string; status: StepStatus }
 
 type CgimParsed = Awaited<ReturnType<typeof parseCgimDinteExcelForFiltering>>;
 
-type Mode = 'ficha' | 'cestas';
-const modeFromHash = (): Mode => (window.location.hash.startsWith('#/cestas') ? 'cestas' : 'ficha');
+type Mode = 'ficha' | 'cestas' | 'alertas';
+const modeFromHash = (): Mode => {
+  const h = window.location.hash;
+  return h.startsWith('#/alertas') ? 'alertas' : h.startsWith('#/cestas') ? 'cestas' : 'ficha';
+};
+const alertEntityFromHash = () => window.location.hash.match(/^#\/alertas\/([A-Z0-9_]+)/)?.[1];
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>(modeFromHash);
+  const [alertEntity, setAlertEntity] = useState<string | undefined>(alertEntityFromHash);
   const [ncmCode, setNcmCode] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -184,6 +190,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const onHash = () => {
       setMode(modeFromHash());
+      setAlertEntity(alertEntityFromHash());
       const m = window.location.hash.match(/^#\/ncm\/(\d{8})/);
       if (m && m[1] !== currentNcmRef.current) handleNcmSubmit(m[1]);
     };
@@ -193,7 +200,7 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { currentNcmRef.current = ncmCode; }, [ncmCode]);
-  const goTo = (m: Mode) => { window.location.hash = m === 'cestas' ? '#/cestas' : (ncmCode ? `#/ncm/${ncmCode}` : '#/'); window.scrollTo(0, 0); };
+  const goTo = (m: Mode) => { window.location.hash = m === 'cestas' ? '#/cestas' : m === 'alertas' ? '#/alertas' : (ncmCode ? `#/ncm/${ncmCode}` : '#/'); window.scrollTo(0, 0); };
   const openNcmFromCesta = (code: string) => { window.location.hash = `#/ncm/${code}`; window.scrollTo(0, 0); };
 
   // ---------------------------------------------------------------------------
@@ -634,7 +641,7 @@ const App: React.FC = () => {
             </span>
           </button>
           <div className="flex rounded-lg bg-white/10 p-0.5">
-            {([['ficha', 'Ficha por NCM'], ['cestas', 'Cestas por entidade']] as [Mode, string][]).map(([m, label]) => (
+            {([['ficha', 'Ficha por NCM'], ['cestas', 'Cestas por entidade'], ['alertas', '🚨 Radar de alertas']] as [Mode, string][]).map(([m, label]) => (
               <button key={m} onClick={() => goTo(m)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === m ? 'bg-white text-brand-900' : 'text-white/70 hover:text-white'}`}>{label}</button>
             ))}
           </div>
@@ -653,7 +660,8 @@ const App: React.FC = () => {
 
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-8">
         {mode === 'cestas' && <CestasView onOpenNcm={openNcmFromCesta} />}
-        <div className={mode === 'cestas' ? 'hidden' : ''}>
+        {mode === 'alertas' && <AlertasPage entidadeInicial={alertEntity} onOpenNcm={openNcmFromCesta} />}
+        <div className={mode !== 'ficha' ? 'hidden' : ''}>
         {/* Tela inicial */}
         {!ncmCode && (
           <div className="mx-auto mt-10 max-w-2xl text-center">
