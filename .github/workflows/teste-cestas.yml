@@ -1,0 +1,45 @@
+name: TESTE cestas (temporario)
+
+# Roda todo dia 7 (e de novo nos dias 10 e 15, caso a API ainda não tenha publicado o mês novo:
+# se já estiver atualizado, termina em segundos sem consultar nada).
+# Também roda quando a planilha em dados-fonte/ é trocada, e pode ser disparado manualmente
+# em Actions → "Atualizar cestas por entidade" → Run workflow.
+on:
+  push:
+    branches: [cestas-entidades]
+    paths: [".github/workflows/teste-cestas.yml", "scripts/teste-gatilho.txt"]
+
+concurrency:
+  group: atualizar-cestas
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Gerar dicionário (se houver planilha em dados-fonte/)
+        run: node scripts/build-dicionario.mjs
+      - name: Consultar a API Comex Stat (devagar)
+        env:
+          FORCE: "1"
+          ONLY: "SINDIFER,ABRAFE"
+        run: node scripts/update-cestas.mjs
+      - name: Salvar no repositório (o Netlify publica sozinho)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/cestas
+          if git diff --cached --quiet; then echo "Sem mudanças."; exit 0; fi
+          git commit -m "Atualiza dados das cestas por entidade"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push
