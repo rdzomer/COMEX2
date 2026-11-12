@@ -12,9 +12,6 @@ const NIVEL: Record<Nivel, { rotulo: string; cor: string; fundo: string; borda: 
 };
 const ICONE: Record<TipoSinal, string> = { surto: '📈', aceleracao: '⚡', pico: '📍', preco: '💲', origem: '🌐', exportacao: '📉' };
 
-const VERIF_KEY = 'cestas.alertasVerificados';
-const lerVerificados = (): Set<string> => { try { return new Set(JSON.parse(localStorage.getItem(VERIF_KEY) || '[]')); } catch { return new Set(); } };
-const salvarVerificados = (s: Set<string>) => { try { localStorage.setItem(VERIF_KEY, JSON.stringify([...s])); } catch { /* sem armazenamento */ } };
 
 interface Props {
   manifest: CestaManifest;
@@ -31,8 +28,6 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
   const [entidade, setEntidade] = useState<string>(entidadeInicial || '');
   const [niveis, setNiveis] = useState<Set<Nivel>>(new Set(['alto', 'medio']));
   const [tipos, setTipos] = useState<Set<TipoSinal>>(new Set());
-  const [verificados, setVerificados] = useState<Set<string>>(lerVerificados);
-  const [mostrarVerificados, setMostrarVerificados] = useState(false);
   const [limite, setLimite] = useState(12);
   const [abrirCriterios, setAbrirCriterios] = useState(false);
 
@@ -54,16 +49,13 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
 
   const base = recalculados ?? arquivo?.alertas ?? [];
   const periodo = arquivo ? `${arquivo.atualizacao.ano}${String(arquivo.atualizacao.mes).padStart(2, '0')}` : '';
-  const chave = (a: Alerta) => `${a.ncm}:${periodo}`;
   const noEscopo = useMemo(() => base.filter(a => !entidade || a.entidades.some(e => e.id === entidade)), [base, entidade]);
-  const contagem = (lv: Nivel) => noEscopo.filter(a => a.nivel === lv && (mostrarVerificados || !verificados.has(chave(a)))).length;
+  const contagem = (lv: Nivel) => noEscopo.filter(a => a.nivel === lv).length;
   const lista = noEscopo.filter(a =>
     niveis.has(a.nivel) &&
-    (!tipos.size || a.sinais.some(s => tipos.has(s.tipo))) &&
-    (mostrarVerificados || !verificados.has(chave(a))));
+    (!tipos.size || a.sinais.some(s => tipos.has(s.tipo))));
 
   const alternar = <T,>(set: Set<T>, v: T, fn: (s: Set<T>) => void) => { const n = new Set(set); n.has(v) ? n.delete(v) : n.add(v); fn(n); };
-  const marcar = (a: Alerta) => { const n = new Set(verificados); n.has(chave(a)) ? n.delete(chave(a)) : n.add(chave(a)); setVerificados(n); salvarVerificados(n); };
 
   const exportar = () => downloadWorkbook(`Radar_alertas_${periodo}.xlsx`, [{
     name: 'Alertas',
@@ -117,10 +109,6 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
               </button>
             ))}
             <div className="ml-auto flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-slate-500">
-                <input type="checkbox" checked={mostrarVerificados} onChange={e => setMostrarVerificados(e.target.checked)} className="accent-brand-500" />
-                mostrar verificados
-              </label>
               <Button variant="ghost" onClick={() => setAbrirCriterios(!abrirCriterios)}>⚙ Critérios{!padrao && ' (alterados)'}</Button>
               <Button variant="ghost" onClick={exportar} icon={Icons.excel}>Excel</Button>
             </div>
@@ -135,7 +123,7 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
           ) : (
             <div className="mt-4 grid gap-3 lg:grid-cols-2">
               {lista.slice(0, limite).map(a => (
-                <CartaoAlerta key={a.ncm} a={a} verificado={verificados.has(chave(a))} onVerificar={() => marcar(a)} onOpenNcm={onOpenNcm} />
+                <CartaoAlerta key={a.ncm} a={a} onOpenNcm={onOpenNcm} />
               ))}
             </div>
           )}
@@ -154,10 +142,10 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
   );
 };
 
-function CartaoAlerta({ a, verificado, onVerificar, onOpenNcm }: { a: Alerta; verificado: boolean; onVerificar: () => void; onOpenNcm: (n: string) => void }) {
+function CartaoAlerta({ a, onOpenNcm }: { a: Alerta; onOpenNcm: (n: string) => void }) {
   const nv = NIVEL[a.nivel];
   return (
-    <article className={`rounded-xl border border-l-4 border-slate-200 ${nv.borda} bg-white p-4 ${verificado ? 'opacity-60' : ''}`}>
+    <article className={`rounded-xl border border-l-4 border-slate-200 ${nv.borda} bg-white p-4`}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -182,7 +170,6 @@ function CartaoAlerta({ a, verificado, onVerificar, onOpenNcm }: { a: Alerta; ve
         <span>{formatDecimalPtBR(a.participacaoCesta * 100)}% da cesta</span>
         <span className="ml-auto flex gap-2">
           <button onClick={() => onOpenNcm(a.ncm)} className="rounded-md bg-brand-500 px-2.5 py-1 font-semibold text-white hover:bg-brand-600">Abrir ficha</button>
-          <button onClick={onVerificar} className="rounded-md border border-slate-300 px-2.5 py-1 font-medium text-slate-600 hover:bg-slate-50">{verificado ? 'Desmarcar' : '✓ Verificado'}</button>
         </span>
       </div>
     </article>
