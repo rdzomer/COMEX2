@@ -10,6 +10,8 @@ import { ChartCard, KpiCard, Button, SegmentedControl, SectionPicker, Swatch, Ic
 import { AnnualBarChart, PriceLineChart, TradeBalanceChart, RollingSumChart, CountryTreemap, COLORS } from './components/charts/ChartKit.tsx';
 import CestasView from './components/cestas/CestasView.tsx';
 import { AlertasPage } from './components/cestas/AlertasRadar.tsx';
+import MetodologiaAlertas from './components/cestas/MetodologiaAlertas.tsx';
+import { mercadoDaNfe, salvarMercado } from './utils/mercado.ts';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
 
 import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryData } from './services/comexApiService.ts';
@@ -46,10 +48,10 @@ interface Step { key: string; label: string; status: StepStatus }
 
 type CgimParsed = Awaited<ReturnType<typeof parseCgimDinteExcelForFiltering>>;
 
-type Mode = 'ficha' | 'cestas' | 'alertas';
+type Mode = 'ficha' | 'cestas' | 'alertas' | 'metodologia';
 const modeFromHash = (): Mode => {
   const h = window.location.hash;
-  return h.startsWith('#/alertas') ? 'alertas' : h.startsWith('#/cestas') ? 'cestas' : 'ficha';
+  return h.startsWith('#/metodologia') ? 'metodologia' : h.startsWith('#/alertas') ? 'alertas' : h.startsWith('#/cestas') ? 'cestas' : 'ficha';
 };
 const alertEntityFromHash = () => window.location.hash.match(/^#\/alertas\/([A-Z0-9_]+)/)?.[1];
 
@@ -219,7 +221,9 @@ const App: React.FC = () => {
   const handleNfeFile = async (file: File) => {
     setFileBusy('nfe');
     try {
-      setNfeAll(await parseNfeExcel(file));
+      const rows = await parseNfeExcel(file);
+      setNfeAll(rows);
+      salvarMercado(mercadoDaNfe(rows), file.name); // também alimenta o radar de alertas (fica só no navegador)
       setNfeFile(file);
     } catch (e) {
       alert(`Erro ao processar a planilha de NF-e: ${(e as Error).message}`);
@@ -642,7 +646,7 @@ const App: React.FC = () => {
           </button>
           <div className="flex rounded-lg bg-white/10 p-0.5">
             {([['ficha', 'Ficha por NCM'], ['cestas', 'Cestas por entidade'], ['alertas', '🚨 Radar de alertas']] as [Mode, string][]).map(([m, label]) => (
-              <button key={m} onClick={() => goTo(m)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === m ? 'bg-white text-brand-900' : 'text-white/70 hover:text-white'}`}>{label}</button>
+              <button key={m} onClick={() => goTo(m)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === m || (m === 'alertas' && mode === 'metodologia') ? 'bg-white text-brand-900' : 'text-white/70 hover:text-white'}`}>{label}</button>
             ))}
           </div>
           {mode === 'ficha' && ncmCode && <div className="ml-auto w-full md:w-auto md:min-w-[22rem]"><NcmInput onSubmit={handleNcmSubmit} loading={loading} /></div>}
@@ -661,6 +665,7 @@ const App: React.FC = () => {
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-8">
         {mode === 'cestas' && <CestasView onOpenNcm={openNcmFromCesta} />}
         {mode === 'alertas' && <AlertasPage entidadeInicial={alertEntity} onOpenNcm={openNcmFromCesta} />}
+        {mode === 'metodologia' && <MetodologiaAlertas />}
         <div className={mode !== 'ficha' ? 'hidden' : ''}>
         {/* Tela inicial */}
         {!ncmCode && (

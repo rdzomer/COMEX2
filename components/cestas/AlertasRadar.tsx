@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CestaManifest, loadAlertas, loadCesta, AlertasArquivo } from '../../utils/cestas.ts';
-import { Alerta, Criterios, CRITERIOS_PADRAO, Nivel, ROTULO_SINAL, TipoSinal, alertasDaCesta, juntarAlertas } from '../../utils/alertas.ts';
+import { Alerta, Criterios, CRITERIOS_PADRAO, Nivel, ROTULO_SINAL, TipoSinal, alertasDaCesta, juntarAlertas, aplicarMercado, ordenar, fmtUsd, fmtPeso } from '../../utils/alertas.ts';
+import { lerMercado, salvarMercado, apagarMercado, mercadoDaNfe } from '../../utils/mercado.ts';
+import { parseNfeExcel } from '../../services/excelService.ts';
 import { formatCompactPtBR, formatDecimalPtBR, formatNcmCode, getMonthNamePtBR } from '../../utils/formatting.ts';
 import { downloadWorkbook } from '../../services/excelService.ts';
 import { Button, Icons } from '../ui.tsx';
@@ -30,6 +32,19 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
   const [tipos, setTipos] = useState<Set<TipoSinal>>(new Set());
   const [limite, setLimite] = useState(12);
   const [abrirCriterios, setAbrirCriterios] = useState(false);
+  const [ordem, setOrdem] = useState<'gravidade' | 'impacto'>('gravidade');
+  const [mercado, setMercado] = useState(lerMercado);
+  const [lendoNfe, setLendoNfe] = useState(false);
+  const nfeInput = useRef<HTMLInputElement>(null);
+  const carregarNfe = async (f: File) => {
+    setLendoNfe(true);
+    try {
+      const mapa = mercadoDaNfe(await parseNfeExcel(f));
+      salvarMercado(mapa, f.name);
+      setMercado({ mapa, fonte: f.name, salvoEm: new Date().toISOString() });
+    } catch (e) { alert(`Não foi possível ler a planilha de NF-e: ${(e as Error).message}`); }
+    setLendoNfe(false);
+  };
 
   useEffect(() => { loadAlertas().then(setArquivo).catch(() => setErro(true)); }, []);
 
@@ -47,7 +62,10 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
     return () => { cancel = true; clearTimeout(t); };
   }, [criterios, padrao, manifest]);
 
-  const base = recalculados ?? arquivo?.alertas ?? [];
+  const base = useMemo(() => {
+    const l = recalculados ?? arquivo?.alertas ?? [];
+    return ordenar(mercado ? aplicarMercado(l, mercado.mapa) : l, ordem);
+  }, [recalculados, arquivo, mercado, ordem]);
   const periodo = arquivo ? `${arquivo.atualizacao.ano}${String(arquivo.atualizacao.mes).padStart(2, '0')}` : '';
   const noEscopo = useMemo(() => base.filter(a => !entidade || a.entidades.some(e => e.id === entidade)), [base, entidade]);
   const contagem = (lv: Nivel) => noEscopo.filter(a => a.nivel === lv).length;
@@ -62,7 +80,10 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
     rows: lista.map(a => ({
       'Nível': NIVEL[a.nivel].rotulo, 'Pontos': a.pontos, 'NCM': a.ncm, 'Descrição': a.descricao,
       'Cestas': a.entidades.map(e => e.rotulo).join(', '), 'Importações 12 meses (US$)': a.importacao12mUsd,
-      'Importações 12 meses (kg)': a.importacao12mKg, 'Participação na cesta (%)': a.participacaoCesta * 100,
+      'Importações 12 meses (kg)': a.importacao12mKg, 'Importações 12 meses anteriores (US$)': a.importacaoAnt12mUsd,
+      'Peso na cesta (%)': a.participacaoCesta * 100, 'Aumento 12 meses (US$)': a.impactoUsd, 'Aumento / importações da cesta (%)': a.impacto * 100,
+      'Importações / consumo aparente (%) (NF-e)': a.mercado ? a.mercado.penetracao * 100 : null, 'Ano NF-e': a.mercado?.ano ?? null,
+      'Limitado por materialidade': a.limitadoPorMaterialidade && a.nivel === 'atencao' ? 'sim' : '',
       'Sinais': a.sinais.map(s => `${ROTULO_SINAL[s.tipo]}: ${s.texto}`).join(' | '),
     })),
   }]);
@@ -78,7 +99,7 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl">🚨</span>
           <span>
             <span className="block text-lg font-bold leading-tight">Radar de alertas</span>
-            <span className="block text-xs text-white/80">NCMs com comportamento fora do padrão · dados até {getMonthNamePtBR(arquivo.atualizacao.mes)}/{arquivo.atualizacao.ano}</span>
+            <span className="block text-xs text-white/80">NCMs com comportamento fora do padrão · dados até {getMonthNamePtBR(arquivo.atualizacao.mes)}/{arquivo.atualizacao.ano} · <a href="#/metodologia" className="font-semibold text-white underline underline-offset-2 hover:text-white/90">Metodologia</a></span>
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -108,12 +129,31 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
                 {ICONE[t]} {ROTULO_SINAL[t]}
               </button>
             ))}
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <select value={ordem} onChange={e => setOrdem(e.target.value as 'gravidade' | 'impacto')} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700">
+                <option value="gravidade">Ordenar por gravidade</option>
+                <option value="impacto">Ordenar por impacto (US$)</option>
+              </select>
+              <input ref={nfeInput} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) carregarNfe(f); e.target.value = ''; }} />
+              <Button variant="ghost" onClick={() => nfeInput.current?.click()} disabled={lendoNfe}
+                title="Planilha de NF-e: mostra quanto as importações representam do consumo nacional aparente. Fica só neste navegador.">
+                {lendoNfe ? 'Lendo NF-e…' : mercado ? '📄 NF-e carregada' : '📄 Carregar NF-e'}
+              </Button>
               <Button variant="ghost" onClick={() => setAbrirCriterios(!abrirCriterios)}>⚙ Critérios{!padrao && ' (alterados)'}</Button>
               <Button variant="ghost" onClick={exportar} icon={Icons.excel}>Excel</Button>
             </div>
           </div>
 
+          {mercado ? (
+            <p className="mt-3 text-xs text-slate-500">
+              Peso no mercado brasileiro calculado com <b>{mercado.fonte}</b> (guardado só neste navegador).{' '}
+              <button className="text-brand-600 hover:underline" onClick={() => { apagarMercado(); setMercado(null); }}>Remover</button>
+            </p>
+          ) : (
+            <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              Para ver quanto as importações representam do <b>consumo nacional aparente</b>, carregue a planilha de NF-e (botão “Carregar NF-e”). Ela é lida só no seu navegador.
+            </p>
+          )}
           {abrirCriterios && <PainelCriterios criterios={criterios} onChange={setCriterios} />}
           {recalculando && <p className="mt-3 text-sm text-slate-500">Recalculando com os novos critérios…</p>}
 
@@ -135,6 +175,7 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
           <p className="mt-4 text-[11px] text-slate-400">
             Triagem automática para orientar a análise: confirme na ficha individual e na análise de surto da NCM.
             Só entram NCMs relevantes (importações de 12 meses ≥ US$ {formatCompactPtBR(criterios.relevanciaUsd)} ou ≥ {formatDecimalPtBR(criterios.relevanciaParticipacao * 100)}% da cesta).
+            {' '}<a href="#/metodologia" className="text-brand-600 hover:underline">Ver metodologia completa</a>.
           </p>
         </div>
       )}
@@ -165,14 +206,50 @@ function CartaoAlerta({ a, onOpenNcm }: { a: Alerta; onOpenNcm: (n: string) => v
           </li>
         ))}
       </ul>
-      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-        <span>Importações 12 meses: <b className="tabular text-slate-700">US$ {formatCompactPtBR(a.importacao12mUsd)}</b> · <b className="tabular text-slate-700">{formatCompactPtBR(a.importacao12mKg)} kg</b></span>
-        <span>{formatDecimalPtBR(a.participacaoCesta * 100)}% da cesta</span>
-        <span className="ml-auto flex gap-2">
-          <button onClick={() => onOpenNcm(a.ncm)} className="rounded-md bg-brand-500 px-2.5 py-1 font-semibold text-white hover:bg-brand-600">Abrir ficha</button>
-        </span>
+      <Materialidade a={a} />
+      <div className="mt-3 flex justify-end">
+        <button onClick={() => onOpenNcm(a.ncm)} className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-600">Abrir ficha</button>
       </div>
     </article>
+  );
+}
+
+/** Tamanho do movimento: peso na cesta, aumento absoluto e peso no mercado brasileiro. */
+function Materialidade({ a }: { a: Alerta }) {
+  const pct = (x: number, d = 2) => `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: d }).format(x * 100)}%`;
+  const subiu = a.impactoUsd >= 0;
+  const so = a.sinais.every(s => s.tipo === 'exportacao' || s.tipo === 'origem' || s.tipo === 'pico');
+  const m = a.mercado;
+  const pp = m && m.penetracaoAnterior != null ? (m.penetracao - m.penetracaoAnterior) * 100 : null;
+  return (
+    <div className="mt-3 grid gap-2 rounded-lg bg-slate-50 p-3 text-xs sm:grid-cols-3">
+      <div>
+        <p className="font-medium text-slate-500">Peso na cesta {a.cestaRotulo}</p>
+        <p className="mt-0.5 text-base font-semibold tabular text-slate-900">{pct(a.participacaoCesta)}</p>
+        <p className="text-slate-500">{fmtUsd(a.importacao12mUsd)} de {fmtUsd(a.cestaImportacao12mUsd)} importados em 12 meses</p>
+      </div>
+      <div>
+        <p className="font-medium text-slate-500">{so ? 'Tamanho da queda das exportações' : 'Tamanho do aumento (12 meses)'}</p>
+        <p className="mt-0.5 text-base font-semibold tabular text-slate-900">{so ? '−' : subiu ? '+' : '−'}{fmtUsd(Math.abs(a.impactoUsd))}</p>
+        <p className="text-slate-500">
+          {so ? `${pct(Math.abs(a.impacto))} das exportações da cesta` : <>= {pct(Math.abs(a.impacto))} das importações da cesta · {fmtPeso(a.importacaoAnt12mKg)} → {fmtPeso(a.importacao12mKg)}</>}
+        </p>
+      </div>
+      <div>
+        <p className="font-medium text-slate-500">Peso no consumo aparente {m ? `(NF-e ${m.ano})` : ''}</p>
+        {m ? (
+          <>
+            <p className="mt-0.5 text-base font-semibold tabular text-slate-900">{pct(m.penetracao, 1)}</p>
+            <p className="text-slate-500">das vendas no mercado brasileiro vêm de importação{pp != null && m.anoAnterior ? ` (${m.anoAnterior}: ${pct(m.penetracaoAnterior!, 1)}, ${pp >= 0 ? '+' : ''}${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(pp)} p.p.)` : ''}</p>
+          </>
+        ) : <p className="mt-0.5 text-slate-400">carregue a NF-e para ver</p>}
+      </div>
+      {a.limitadoPorMaterialidade && a.nivel === 'atencao' && (
+        <p className="rounded-md bg-amber-100 px-2 py-1 text-amber-800 sm:col-span-3">
+          ⚖ Variação grande, mas pequena em valor: o aumento equivale a menos de {pct(CRITERIOS_PADRAO.impactoMinimo)} da cesta e a menos de {fmtUsd(CRITERIOS_PADRAO.impactoMinimoUsd)}{m ? ' e o peso no consumo aparente é baixo' : ''}. Por isso o alerta fica em observação.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -202,6 +279,8 @@ function PainelCriterios({ criterios, onChange }: { criterios: Criterios; onChan
     { k: 'quedaExportacao', rotulo: 'Queda de exportações no ano de pelo menos', un: '%', mult: 100 },
     { k: 'relevanciaUsd', rotulo: 'Relevância: importações de 12 meses de pelo menos', un: 'US$ mi', mult: 1e-6 },
     { k: 'relevanciaParticipacao', rotulo: '… ou participação na cesta de pelo menos', un: '%', mult: 100 },
+    { k: 'impactoMinimo', rotulo: 'Materialidade: aumento de pelo menos … das importações da cesta', un: '%', mult: 100 },
+    { k: 'impactoMinimoUsd', rotulo: '… ou aumento absoluto de pelo menos', un: 'US$ mi', mult: 1e-6 },
   ];
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
