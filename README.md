@@ -19,3 +19,16 @@ npm run dev
 ```
 
 O deploy no Netlify usa `npm run build` e publica a pasta `dist` (ver `netlify.toml`).
+
+## Cestas por entidade (`#/cestas`)
+
+Análise das cestas de NCMs de cada entidade (ABAL, IABR, IBÁ…), com filtros por categoria e subcategorias,
+séries anuais, composição, tabela hierárquica até NCM (com link para a ficha individual), importações
+acumuladas em 12 meses e países.
+
+- **Dados:** `public/cestas/*.json`, gerados pela tarefa do GitHub Actions *Atualizar cestas por entidade*
+  (`.github/workflows/atualizar-cestas.yml`), que roda nos dias 7, 10 e 15 de cada mês e consulta a API
+  devagar (1 chamada a cada 8 s). Se a API ainda não publicou mês novo, ela não faz nada.
+  Para rodar na hora: *Actions → Atualizar cestas por entidade → Run workflow*.
+- **Classificação das NCMs:** `public/cestas/dicionario.json` (sem dados de contato), gerado a partir da
+  planilha em `dados-fonte/` (veja `dados-fonte/README.md`).
