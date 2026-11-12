@@ -1,349 +1,263 @@
-import { ComexStatRecord, ProcessedTradeData, LastUpdateData, NcmDetails, YearSummaryData, NfeData, FormattedNfeSalesData, FormattedNfeCnaData, MonthlyComexStatRecord, RollingSumDataPoint, SurgeAnalysisPeriodValues, SurgeAnalysisResult } from '../types.ts';
-import { formatDecimalPtBR, formatIntegerPtBR, formatPercentagePtBR, getMonthNamePtBR } from './formatting.ts';
+import {
+  ComexStatRecord, ProcessedTradeData, LastUpdateData, NcmDetails, YearSummaryData, NfeData,
+  FormattedNfeSalesData, FormattedNfeCnaData, MonthlyComexStatRecord, MonthlySeriesPoint,
+  SurgeAnalysisPeriodValues, SurgeAnalysisResult, YearRowKind, TwelveMonthSummary, TwelveMonthBlock,
+} from '../types.ts';
+import { formatIntegerPtBR, formatPercentagePtBR, getMonthNamePtBR, MONTHS_ABBR, pad2 } from './formatting.ts';
 
+const safeDiv = (num: number, den: number): number | null => (den ? num / den : null);
+
+/**
+ * Junta exportações e importações por ano e calcula balança comercial e preços médios
+ * (mesmas colunas do notebook: US$ FOB/Ton e US$/Qtd Estatística; US$/KG para o gráfico).
+ */
 export function processAnnualTradeData(
   exportData: ComexStatRecord[],
   importData: ComexStatRecord[],
   ncmCode: string,
   ncmDetails: NcmDetails,
-  lastUpdateData: LastUpdateData | null
+  lastUpdateData: LastUpdateData | null,
+  forcedKind?: YearRowKind,
 ): ProcessedTradeData[] {
-  const combinedMap = new Map<number, ProcessedTradeData>();
+  const byYear = new Map<number, ProcessedTradeData>();
+  const get = (year: number) => {
+    if (!byYear.has(year)) byYear.set(year, { year: String(year), yearNumeric: year });
+    return byYear.get(year)!;
+  };
+  const add = (row: ProcessedTradeData, key: keyof ProcessedTradeData, v: unknown) => {
+    (row as any)[key] = ((row as any)[key] || 0) + (Number(v) || 0);
+  };
 
   exportData.forEach(item => {
-    const year = item.year;
-    if (!combinedMap.has(year)) {
-      combinedMap.set(year, { year: String(year) });
-    }
-    const entry = combinedMap.get(year)!;
-    entry['Código NCM'] = ncmCode;
-    entry['Descrição NCM'] = ncmDetails.description || '';
-    entry['Unidade Estatística'] = ncmDetails.unit || '';
-    entry['Exportações (US$ FOB)'] = (entry['Exportações (US$ FOB)'] || 0) + (Number(item.metricFOB) || 0);
-    entry['Exportações (KG)'] = (entry['Exportações (KG)'] || 0) + (Number(item.metricKG) || 0);
-    entry['Exportações (Qtd Estatística)'] = (entry['Exportações (Qtd Estatística)'] || 0) + (Number(item.metricStatistic) || 0);
+    const r = get(Number(item.year));
+    add(r, 'Exportações (US$ FOB)', item.metricFOB);
+    add(r, 'Exportações (KG)', item.metricKG);
+    add(r, 'Exportações (Qtd Estatística)', item.metricStatistic);
   });
-
   importData.forEach(item => {
-    const year = item.year;
-    if (!combinedMap.has(year)) {
-      combinedMap.set(year, { year: String(year) });
-    }
-    const entry = combinedMap.get(year)!;
-    entry['Código NCM'] = ncmCode;
-    entry['Descrição NCM'] = ncmDetails.description || '';
-    entry['Unidade Estatística'] = ncmDetails.unit || '';
-    entry['Importações (US$ FOB)'] = (entry['Importações (US$ FOB)'] || 0) + (Number(item.metricFOB) || 0);
-    entry['Importações (KG)'] = (entry['Importações (KG)'] || 0) + (Number(item.metricKG) || 0);
-    entry['Importações (Qtd Estatística)'] = (entry['Importações (Qtd Estatística)'] || 0) + (Number(item.metricStatistic) || 0);
-    entry['Importações (Frete USD)'] = (entry['Importações (Frete USD)'] || 0) + (Number(item.metricFreight) || 0);
-    entry['Importações (Seguro USD)'] = (entry['Importações (Seguro USD)'] || 0) + (Number(item.metricInsurance) || 0);
-    entry['Importações (CIF USD)'] = (entry['Importações (CIF USD)'] || 0) + (Number(item.metricCIF) || 0);
+    const r = get(Number(item.year));
+    add(r, 'Importações (US$ FOB)', item.metricFOB);
+    add(r, 'Importações (KG)', item.metricKG);
+    add(r, 'Importações (Qtd Estatística)', item.metricStatistic);
+    add(r, 'Importações (Frete USD)', item.metricFreight);
+    add(r, 'Importações (Seguro USD)', item.metricInsurance);
+    add(r, 'Importações (CIF USD)', item.metricCIF);
   });
 
-  const processedData: ProcessedTradeData[] = Array.from(combinedMap.values()).sort((a, b) => Number(a.year) - Number(b.year));
+  const lastYear = lastUpdateData?.year ?? null;
+  const lastMonth = lastUpdateData?.month ?? null;
+  const partialYear = lastMonth !== null && lastMonth < 12;
 
-  processedData.forEach(item => {
-    // Fill missing metrics with 0 for calculations
-    item['Exportações (US$ FOB)'] = item['Exportações (US$ FOB)'] || 0;
-    item['Exportações (KG)'] = item['Exportações (KG)'] || 0;
-    item['Exportações (Qtd Estatística)'] = item['Exportações (Qtd Estatística)'] || 0;
-    item['Importações (US$ FOB)'] = item['Importações (US$ FOB)'] || 0;
-    item['Importações (KG)'] = item['Importações (KG)'] || 0;
-    item['Importações (Qtd Estatística)'] = item['Importações (Qtd Estatística)'] || 0;
-    item['Importações (CIF USD)'] = item['Importações (CIF USD)'] || 0;
-    item['Importações (Frete USD)'] = item['Importações (Frete USD)'] || 0;
-    item['Importações (Seguro USD)'] = item['Importações (Seguro USD)'] || 0;
+  return Array.from(byYear.values())
+    .sort((a, b) => a.yearNumeric! - b.yearNumeric!)
+    .map(item => {
+      const r: ProcessedTradeData = {
+        year: item.year,
+        yearNumeric: item.yearNumeric,
+        'Código NCM': ncmCode,
+        'Descrição NCM': ncmDetails.description || '',
+        'Unidade Estatística': ncmDetails.unit || '',
+      };
+      const expFob = item['Exportações (US$ FOB)'] || 0;
+      const expKg = item['Exportações (KG)'] || 0;
+      const expQtd = item['Exportações (Qtd Estatística)'] || 0;
+      const impFob = item['Importações (US$ FOB)'] || 0;
+      const impKg = item['Importações (KG)'] || 0;
+      const impQtd = item['Importações (Qtd Estatística)'] || 0;
+      Object.assign(r, {
+        'Exportações (US$ FOB)': expFob,
+        'Exportações (KG)': expKg,
+        'Exportações (Qtd Estatística)': expQtd,
+        'Importações (US$ FOB)': impFob,
+        'Importações (KG)': impKg,
+        'Importações (Qtd Estatística)': impQtd,
+        'Balança Comercial (FOB)': expFob - impFob,
+        'Balança Comercial (KG)': expKg - impKg,
+        'Balança Comercial (Qtd Estatística)': expQtd - impQtd,
+        'Importações (CIF USD)': item['Importações (CIF USD)'] || 0,
+        'Importações (Frete USD)': item['Importações (Frete USD)'] || 0,
+        'Importações (Seguro USD)': item['Importações (Seguro USD)'] || 0,
+        'Preço Médio Exportação (US$ FOB/Ton)': safeDiv(expFob, expKg / 1000),
+        'Preço Médio Importação (US$ FOB/Ton)': safeDiv(impFob, impKg / 1000),
+        'Preço Médio Exportação (US$/Qtd Est)': safeDiv(expFob, expQtd),
+        'Preço Médio Importação (US$/Qtd Est)': safeDiv(impFob, impQtd),
+        'Preço Médio Exportação (US$/KG)': safeDiv(expFob, expKg),
+        'Preço Médio Importação (US$/KG)': safeDiv(impFob, impKg),
+      });
 
-    item['Balança Comercial (FOB)'] = item['Exportações (US$ FOB)']! - item['Importações (US$ FOB)']!;
-    item['Balança Comercial (KG)'] = item['Exportações (KG)']! - item['Importações (KG)']!;
-    item['Balança Comercial (Qtd Estatística)'] = item['Exportações (Qtd Estatística)']! - item['Importações (Qtd Estatística)']!;
-
-    item['Preço Médio Exportação (US$ FOB/Ton)'] = item['Exportações (KG)']! > 0 ? item['Exportações (US$ FOB)']! / (item['Exportações (KG)']! / 1000) : 0;
-    item['Preço Médio Importação (US$ FOB/Ton)'] = item['Importações (KG)']! > 0 ? item['Importações (US$ FOB)']! / (item['Importações (KG)']! / 1000) : 0;
-    
-    item['Preço Médio Exportação (US$/KG)'] = item['Exportações (KG)']! !== 0 ? item['Exportações (US$ FOB)']! / item['Exportações (KG)']! : 0;
-    item['Preço Médio Importação (US$/KG)'] = item['Importações (KG)']! !== 0 ? item['Importações (US$ FOB)']! / item['Importações (KG)']! : 0;
-    
-    if (lastUpdateData && item.year === String(lastUpdateData.year)) { 
-         item.year = `${item.year} (Até mês ${String(lastUpdateData.month).padStart(2, '0')})`;
-    }
-  });
-  
-  return processedData;
+      let kind: YearRowKind = forcedKind ?? 'full';
+      if (!forcedKind && partialYear && item.yearNumeric === lastYear) kind = 'ytd';
+      r.kind = kind;
+      if (kind !== 'full' && lastMonth !== null) {
+        r.year = `${item.yearNumeric} (Até mês ${pad2(lastMonth)})`;
+      }
+      return r;
+    });
 }
 
-export function createYearSummary(
-  fullData: ProcessedTradeData[],
-  flow: 'import' | 'export'
-): YearSummaryData[] {
-  if (!fullData || fullData.length === 0) return [];
+/**
+ * Ordena a série anual: anos fechados, depois "ano anterior até mês X" e "ano corrente até mês X".
+ * (No notebook, o ano anterior até mês X é concatenado ao final; aqui fica ao lado do ano corrente
+ * para leitura cronológica nos gráficos.)
+ */
+export function sortAnnualRows(rows: ProcessedTradeData[]): ProcessedTradeData[] {
+  const key = (r: ProcessedTradeData) => (r.yearNumeric ?? 0) + (r.kind === 'prevYtd' ? 0.5 : 0);
+  return [...rows].sort((a, b) => key(a) - key(b));
+}
 
-  const relevantYearsData = fullData
-    .map(d => ({ ...d, yearNumeric: parseInt(d.year.substring(0, 4)) })) 
-    .filter(d => !isNaN(d.yearNumeric) && d.yearNumeric >= 2019) 
-    .sort((a, b) => a.yearNumeric - b.yearNumeric);
+/**
+ * Quadro resumo (notebook, células 13–16): anos a partir de 2020 (2019 só serve de base),
+ * variação % contra o ano anterior. O "ano anterior até mês X" fica sem variação e
+ * o "ano corrente até mês X" é comparado com ele (mesmo período).
+ */
+export function createYearSummary(fullData: ProcessedTradeData[], flow: 'import' | 'export'): YearSummaryData[] {
+  const rows = fullData.filter(d => (d.yearNumeric ?? 0) >= 2019);
+  const fobKey = flow === 'import' ? 'Importações (US$ FOB)' : 'Exportações (US$ FOB)';
+  const kgKey = flow === 'import' ? 'Importações (KG)' : 'Exportações (KG)';
+  const priceKey = flow === 'import' ? 'Preço Médio Importação (US$ FOB/Ton)' : 'Preço Médio Exportação (US$ FOB/Ton)';
+  const labels = flow === 'import'
+    ? { fob: 'Importações (US$ FOB)', vfob: 'Var. (%) Imp (US$ FOB)', kg: 'Importações (kg)', vkg: 'Var. (%) Imp (kg)', price: 'Preço médio Importação (US$ FOB/Ton)', vprice: 'Var. (%) Preço médio Imp' }
+    : { fob: 'Exportações (US$ FOB)', vfob: 'Var. (%) Exp (US$ FOB)', kg: 'Exportações (kg)', vkg: 'Var. (%) Exp (kg)', price: 'Preço médio Exp (US$ FOB/Ton)', vprice: 'Var. (%) Preço médio Exp' };
 
-  if (relevantYearsData.length < 1) return []; 
+  const pct = (cur: number | null | undefined, prev: number | null | undefined) =>
+    cur !== null && cur !== undefined && prev ? ((cur - prev) / prev) * 100 : null;
 
-  const summary: YearSummaryData[] = [];
+  const out: YearSummaryData[] = [];
+  rows.forEach(cur => {
+    if ((cur.yearNumeric ?? 0) < 2020) return;
+    let base: ProcessedTradeData | undefined;
+    if (cur.kind === 'full') base = rows.find(r => r.kind === 'full' && r.yearNumeric === cur.yearNumeric! - 1);
+    else if (cur.kind === 'ytd') base = rows.find(r => r.kind === 'prevYtd');
+    // prevYtd: sem variação (como no notebook)
 
-  for (let i = 0; i < relevantYearsData.length; i++) {
-    const current = relevantYearsData[i];
-    const previous = relevantYearsData.find(d => d.yearNumeric === current.yearNumeric - 1);
-    
-    const row: YearSummaryData = { 'Ano': current.year };
+    const fob = cur[fobKey] as number;
+    const kg = cur[kgKey] as number;
+    const price = cur[priceKey] as number | null;
+    out.push({
+      'Ano': cur.year,
+      kind: cur.kind,
+      [labels.fob]: fob,
+      [labels.vfob]: base ? pct(fob, base[fobKey] as number) : null,
+      [labels.kg]: kg,
+      [labels.vkg]: base ? pct(kg, base[kgKey] as number) : null,
+      [labels.price]: price,
+      [labels.vprice]: base ? pct(price, base[priceKey] as number | null) : null,
+    });
+  });
+  return out;
+}
 
-    const fobKey = flow === 'import' ? 'Importações (US$ FOB)' : 'Exportações (US$ FOB)';
-    const kgKey = flow === 'import' ? 'Importações (KG)' : 'Exportações (KG)';
-    const priceKey = flow === 'import' ? 'Preço Médio Importação (US$ FOB/Ton)' : 'Preço Médio Exportação (US$ FOB/Ton)';
+/** Série mensal de importações preenchida com zeros, de 2019-01 até o último mês atualizado, com soma móvel de 12 meses. */
+export function buildMonthlySeries(monthly: MonthlyComexStatRecord[], endYear: number, endMonth: number, startYear = 2019): MonthlySeriesPoint[] {
+  const map = new Map<string, { kg: number; fob: number }>();
+  monthly.forEach(m => {
+    const key = `${m.year}-${pad2(m.month)}`;
+    const cur = map.get(key) ?? { kg: 0, fob: 0 };
+    cur.kg += m.metricKG || 0;
+    cur.fob += m.metricFOB || 0;
+    map.set(key, cur);
+  });
 
-    const currentFob = current[fobKey] || 0;
-    const currentKg = current[kgKey] || 0;
-    const currentPrice = current[priceKey] || 0;
-
-    const prevFob = previous ? (previous[fobKey] || 0) : 0;
-    const prevKg = previous ? (previous[kgKey] || 0) : 0;
-    const prevPrice = previous ? (previous[priceKey] || 0) : 0;
-
-    const deltaFob = previous && prevFob !== 0 ? ((currentFob - prevFob) / prevFob) * 100 : NaN;
-    const deltaKg = previous && prevKg !== 0 ? ((currentKg - prevKg) / prevKg) * 100 : NaN;
-    const deltaPrice = previous && prevPrice !== 0 ? ((currentPrice - prevPrice) / prevPrice) * 100 : NaN;
-    
-    const suppressVariation = current.year.includes("(Até mês") && previous && !previous.year.includes("(Até mês");
-
-    if (flow === 'import') {
-      row['Importações (US$ FOB)'] = currentFob;
-      row['Var. (%) Imp (US$ FOB)'] = suppressVariation || !previous ? '' : formatPercentagePtBR(deltaFob);
-      row['Importações (kg)'] = currentKg;
-      row['Var. (%) Imp (kg)'] = suppressVariation || !previous ? '' : formatPercentagePtBR(deltaKg);
-      row['Preço médio Importação (US$ FOB/Ton)'] = currentPrice;
-      row['Var. (%) Preço médio Imp'] = suppressVariation || !previous ? '' : formatPercentagePtBR(deltaPrice);
-    } else {
-      row['Exportações (US$ FOB)'] = currentFob;
-      row['Var. (%) Exp (US$ FOB)'] = suppressVariation || !previous ? '' : formatPercentagePtBR(deltaFob);
-      row['Exportações (kg)'] = currentKg;
-      row['Var. (%) Exp (kg)'] = suppressVariation || !previous ? '' : formatPercentagePtBR(deltaKg);
-      row['Preço médio Exp (US$ FOB/Ton)'] = currentPrice;
-      row['Var. (%) Preço médio Exp'] = suppressVariation || !previous ? '' : formatPercentagePtBR(deltaPrice);
-    }
-    
-    if (current.yearNumeric >= 2019) { // Ensure only 2019 onwards data is pushed
-        summary.push(row);
+  const series: MonthlySeriesPoint[] = [];
+  for (let y = startYear; y <= endYear; y++) {
+    const lastM = y === endYear ? endMonth : 12;
+    for (let m = 1; m <= lastM; m++) {
+      const key = `${y}-${pad2(m)}`;
+      const v = map.get(key) ?? { kg: 0, fob: 0 };
+      series.push({ yearMonth: key, year: y, month: m, metricKG: v.kg, metricFOB: v.fob, rollingKG: null });
     }
   }
-  return summary;
+  let running = 0;
+  series.forEach((p, i) => {
+    running += p.metricKG;
+    if (i >= 12) running -= series[i - 12].metricKG;
+    p.rollingKG = i >= 11 ? running : null;
+  });
+  return series;
 }
 
+/**
+ * Notebook, célula 24: cinco blocos consecutivos de 12 meses terminando no último mês disponível
+ * (P5 = mais recente) e as comparações P5 vs P4, P5 vs Média(P2:P4), P5 vs Média(P1:P4).
+ */
+export function buildTwelveMonthSummary(series: MonthlySeriesPoint[]): TwelveMonthSummary | null {
+  if (series.length === 0) return null;
+  const last = series[series.length - 1];
+  const startMo = (last.month % 12) + 1;
+  const yy = (y: number) => String(y).slice(-2);
+
+  const blocks: TwelveMonthBlock[] = [];
+  for (let i = 0; i < 5; i++) {
+    const slice = series.slice(Math.max(0, series.length - (i + 1) * 12), series.length - i * 12);
+    const endYear = last.year - i;
+    const startYear = startMo > last.month ? endYear - 1 : endYear;
+    blocks.push({
+      periodo: `P${5 - i}`,
+      dataInicio: `${MONTHS_ABBR[startMo - 1]}/${yy(startYear)}`,
+      dataFinal: `${MONTHS_ABBR[last.month - 1]}/${yy(endYear)}`,
+      importacaoKg: Math.round(slice.reduce((s, p) => s + p.metricKG, 0)),
+    });
+  }
+  const [p5, p4, p3, p2, p1] = blocks.map(b => b.importacaoKg);
+  const ratio = (num: number, den: number) => (den === 0 ? null : num / den - 1);
+  return {
+    blocks,
+    comparisons: [
+      { comparacao: 'P5 vs P4', resultado: ratio(p5, p4) },
+      { comparacao: 'P5 vs Média(P2:P4)', resultado: ratio(p5, (p2 + p3 + p4) / 3) },
+      { comparacao: 'P5 vs Média(P1:P4)', resultado: ratio(p5, (p1 + p2 + p3 + p4) / 4) },
+    ],
+  };
+}
 
 export function processNfeSalesData(nfeData: NfeData[]): FormattedNfeSalesData[] {
-  if (!nfeData || nfeData.length === 0) return [];
-
-  const sortedData = [...nfeData].sort((a, b) => (a.ano || 0) - (b.ano || 0));
-
-  return sortedData.map((item, index) => {
-    const prevItem = index > 0 ? sortedData[index - 1] : null;
-
-    const vendasTotais = item.qtd_tributavel_producao || 0;
-    const vendasInternas = item['Vendas internas (KG)'] || 0; 
-    const exportacoes = item.qtd_tributavel_exp || 0;
-
-    const prevVendasTotais = prevItem?.qtd_tributavel_producao || 0;
-    const prevVendasInternas = prevItem?.['Vendas internas (KG)'] || 0;
-    const prevExportacoes = prevItem?.qtd_tributavel_exp || 0;
-    
+  const sorted = [...nfeData].sort((a, b) => (a.ano || 0) - (b.ano || 0));
+  const delta = (cur: number, prev: number | undefined) => (prev ? formatPercentagePtBR(((cur - prev) / prev) * 100) : '');
+  return sorted.map((item, i) => {
+    const prev = i > 0 ? sorted[i - 1] : undefined;
+    const vt = item.qtd_tributavel_producao || 0;
+    const vi = item['Vendas internas (KG)'] || 0;
+    const ex = item.qtd_tributavel_exp || 0;
     return {
       ano: item.ano,
-      'Vendas totais (Kg)': formatIntegerPtBR(vendasTotais),
-      'Δ Vendas totais (%)': prevItem && prevVendasTotais !== 0 ? formatPercentagePtBR(((vendasTotais - prevVendasTotais) / prevVendasTotais) * 100) : '',
-      'Vendas internas (KG)': formatIntegerPtBR(vendasInternas),
-      'Δ Vendas internas (%)': prevItem && prevVendasInternas !== 0 ? formatPercentagePtBR(((vendasInternas - prevVendasInternas) / prevVendasInternas) * 100) : '',
-      'Exportações (Kg)': formatIntegerPtBR(exportacoes),
-      'Δ Exportações (%)': prevItem && prevExportacoes !== 0 ? formatPercentagePtBR(((exportacoes - prevExportacoes) / prevExportacoes) * 100) : '',
+      'Vendas totais (Kg)': formatIntegerPtBR(vt),
+      'Δ Vendas totais (%)': delta(vt, prev?.qtd_tributavel_producao),
+      'Vendas internas (KG)': formatIntegerPtBR(vi),
+      'Δ Vendas internas (%)': delta(vi, prev?.['Vendas internas (KG)']),
+      'Exportações (Kg)': formatIntegerPtBR(ex),
+      'Δ Exportações (%)': delta(ex, prev?.qtd_tributavel_exp),
     };
   });
 }
 
 export function processNfeCnaData(nfeData: NfeData[]): FormattedNfeCnaData[] {
-   if (!nfeData || nfeData.length === 0) return [];
-
-  const sortedData = [...nfeData].sort((a, b) => (a.ano || 0) - (b.ano || 0));
-  
-  return sortedData.map((item, index) => {
-    const prevItem = index > 0 ? sortedData[index - 1] : null;
-
-    const vendasInternas = item['Vendas internas (KG)'] || 0;
-    const importacoes = item.qtd_tributavel_imp || 0;
+  const sorted = [...nfeData].sort((a, b) => (a.ano || 0) - (b.ano || 0));
+  const delta = (cur: number, prev: number | undefined) => (prev ? formatPercentagePtBR(((cur - prev) / prev) * 100) : '');
+  return sorted.map((item, i) => {
+    const prev = i > 0 ? sorted[i - 1] : undefined;
+    const vi = item['Vendas internas (KG)'] || 0;
+    const im = item.qtd_tributavel_imp || 0;
     const cna = item.consumo_nacional_aparente_qtd || 0;
-    const coefImportacao = (item.coeficiente_penetracao_imp_qtd || 0) * 100; // Convert to percentage
-
-    const prevVendasInternas = prevItem?.['Vendas internas (KG)'] || 0;
-    const prevImportacoes = prevItem?.qtd_tributavel_imp || 0;
-    const prevCna = prevItem?.consumo_nacional_aparente_qtd || 0;
-
     return {
       ano: item.ano,
-      'Vendas internas (KG)': formatIntegerPtBR(vendasInternas),
-      'Δ Vendas internas (%)': prevItem && prevVendasInternas !== 0 ? formatPercentagePtBR(((vendasInternas - prevVendasInternas) / prevVendasInternas) * 100) : '',
-      'Importações (Kg)': formatIntegerPtBR(importacoes),
-      'Δ Importações (%)': prevItem && prevImportacoes !== 0 ? formatPercentagePtBR(((importacoes - prevImportacoes) / prevImportacoes) * 100) : '',
+      'Vendas internas (KG)': formatIntegerPtBR(vi),
+      'Δ Vendas internas (%)': delta(vi, prev?.['Vendas internas (KG)']),
+      'Importações (Kg)': formatIntegerPtBR(im),
+      'Δ Importações (%)': delta(im, prev?.qtd_tributavel_imp),
       'CNA (Kg)': formatIntegerPtBR(cna),
-      'Δ CNA (%)': prevItem && prevCna !== 0 ? formatPercentagePtBR(((cna - prevCna) / prevCna) * 100) : '',
-      'Coeficiente de importação (%)': formatPercentagePtBR(coefImportacao),
+      'Δ CNA (%)': delta(cna, prev?.consumo_nacional_aparente_qtd),
+      'Coeficiente de importação (%)': formatPercentagePtBR((item.coeficiente_penetracao_imp_qtd || 0) * 100),
     };
   });
 }
 
-
-export function ensureVendasInternas(nfeDataItems: NfeData[]): NfeData[] {
-  return nfeDataItems.map(item => {
-    if (typeof item['Vendas internas (KG)'] === 'undefined') {
-      const vendasInternas = (item.qtd_tributavel_producao || 0) - (item.qtd_tributavel_exp || 0);
-      return { ...item, 'Vendas internas (KG)': vendasInternas };
-    }
-    return item;
-  });
-}
-
-export function processRollingSumImportData(monthlyData: MonthlyComexStatRecord[]): RollingSumDataPoint[] {
-  console.log("processRollingSumImportData: Input monthlyData (first 5, if available):", monthlyData.slice(0, 5).map(d => ({y:d.year, m:d.month, kg: d.metricKG})));
-
-  if (!monthlyData || monthlyData.length === 0) {
-    console.log("processRollingSumImportData: No monthly data provided or empty (likely due to API data issues or pre-filtering in fetchMonthlyComexData).");
-    return [];
-  }
-
-  const filteredMonthlyData = monthlyData.filter(d => 
-    d.year >= 2019 &&
-    !isNaN(d.year) && 
-    !isNaN(d.month) && d.month >= 1 && d.month <= 12
+/** Vendas internas = vendas totais − exportações (notebook, célula 40). */
+export function ensureVendasInternas(items: NfeData[]): NfeData[] {
+  return items.map(item =>
+    typeof item['Vendas internas (KG)'] === 'number' && !isNaN(item['Vendas internas (KG)'])
+      ? item
+      : { ...item, 'Vendas internas (KG)': (item.qtd_tributavel_producao || 0) - (item.qtd_tributavel_exp || 0) },
   );
-  console.log("processRollingSumImportData: Filtered monthlyData for sum (from 2019, first 5, if available):", filteredMonthlyData.slice(0, 5).map(d => ({y:d.year, m:d.month, kg: d.metricKG})));
-
-
-  if (filteredMonthlyData.length === 0) {
-    console.log("processRollingSumImportData: No valid monthly data from 2019 onwards after internal validation. Original count passed to function:", monthlyData.length);
-    return [];
-  }
-
-  let minYear = filteredMonthlyData[0].year;
-  let minMonthInMinYear = filteredMonthlyData[0].month;
-  let maxYear = filteredMonthlyData[0].year;
-  let maxMonthInMaxYear = filteredMonthlyData[0].month;
-
-  filteredMonthlyData.forEach(d => {
-    if (d.year < minYear) {
-      minYear = d.year;
-      minMonthInMinYear = d.month;
-    } else if (d.year === minYear && d.month < minMonthInMinYear) {
-      minMonthInMinYear = d.month;
-    }
-    if (d.year > maxYear) {
-      maxYear = d.year;
-      maxMonthInMaxYear = d.month;
-    } else if (d.year === maxYear && d.month > maxMonthInMaxYear) {
-      maxMonthInMaxYear = d.month;
-    }
-  });
-  
-  const baseStartDate = new Date(2019, 0, 1); 
-  const actualDataStartDate = new Date(minYear, minMonthInMinYear - 1, 1);
-  const effectiveStartDate = actualDataStartDate > baseStartDate ? actualDataStartDate : baseStartDate;
-  
-  const effectiveEndDate = new Date(maxYear, maxMonthInMaxYear - 1, 1);
-
-  const allMonthsMap = new Map<string, { metricKG: number; metricFOB: number }>();
-
-  if (effectiveStartDate > effectiveEndDate) {
-    console.warn("processRollingSumImportData: effectiveStartDate is after effectiveEndDate. Cannot generate month map.", {
-        effectiveStartDate: effectiveStartDate.toISOString().substring(0,7), 
-        effectiveEndDate: effectiveEndDate.toISOString().substring(0,7),
-        minYearData: `${minYear}-${String(minMonthInMinYear).padStart(2,'0')}`,
-        maxYearData: `${maxYear}-${String(maxMonthInMaxYear).padStart(2,'0')}`
-    });
-    return [];
-  }
-  
-  for (let d = new Date(effectiveStartDate.getTime()); d <= effectiveEndDate; d.setMonth(d.getMonth() + 1)) {
-    const yearMonthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    allMonthsMap.set(yearMonthKey, { metricKG: 0, metricFOB: 0 });
-  }
-  
-  filteredMonthlyData.forEach(item => {
-      const yearMonthKey = `${item.year}-${String(item.month).padStart(2, '0')}`;
-      if (allMonthsMap.has(yearMonthKey)) {
-        allMonthsMap.set(yearMonthKey, {
-          metricKG: (allMonthsMap.get(yearMonthKey)?.metricKG || 0) + (item.metricKG || 0),
-          metricFOB: (allMonthsMap.get(yearMonthKey)?.metricFOB || 0) + (item.metricFOB || 0),
-        });
-      }
-  });
-  
-  const sortedFullMonthlyData = Array.from(allMonthsMap.entries())
-    .map(([yearMonth, metrics]) => ({
-      yearMonth,
-      year: parseInt(yearMonth.substring(0, 4)),
-      month: parseInt(yearMonth.substring(5, 7)),
-      metricKG: metrics.metricKG,
-      metricFOB: metrics.metricFOB,
-    }))
-    .sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
-      return a.month - b.month;
-    });
-  
-  const dataToLog = sortedFullMonthlyData.map(d => ({ ym: d.yearMonth, kg: d.metricKG }));
-  if (dataToLog.length <= 75) {
-    console.log("processRollingSumImportData: sortedFullMonthlyData (ALL ENTRIES as data.length <= 75). Expand to see all monthly KG values:", dataToLog);
-  } else {
-    const firstChunk = dataToLog.slice(0, 25);
-    const middleStartIndex = Math.max(0, Math.floor(dataToLog.length / 2) - 12);
-    const middleEndIndex = Math.min(dataToLog.length, middleStartIndex + 25);
-    const middleChunk = dataToLog.slice(middleStartIndex, middleEndIndex);
-    const lastChunk = dataToLog.slice(Math.max(0, dataToLog.length - 25));
-
-    console.log("processRollingSumImportData: sortedFullMonthlyData (chunked as data.length > 75). Expand to see monthly KG values.");
-    console.log("  First 25 entries:", firstChunk);
-    console.log(`  Middle approx. ${middleChunk.length} entries (from index ${middleStartIndex}):`, middleChunk);
-    console.log("  Last 25 entries:", lastChunk);
-  }
-
-
-  const rollingSumData: RollingSumDataPoint[] = [];
-  const windowSize = 12;
-
-  if (sortedFullMonthlyData.length < windowSize) {
-    console.log(`processRollingSumImportData: Not enough data to form a 12-month window after processing and filling gaps. Required: ${windowSize}, Available in map: ${sortedFullMonthlyData.length}. Map from ${effectiveStartDate.toISOString().substring(0,7)} to ${effectiveEndDate.toISOString().substring(0,7)}.`);
-    return []; 
-  }
-
-  for (let i = windowSize - 1; i < sortedFullMonthlyData.length; i++) {
-    let sumKG = 0;
-    let sumFOB = 0;
-    for (let j = 0; j < windowSize; j++) {
-      sumKG += Number(sortedFullMonthlyData[i - j].metricKG) || 0;
-      sumFOB += Number(sortedFullMonthlyData[i - j].metricFOB) || 0;
-    }
-    rollingSumData.push({
-      yearMonth: sortedFullMonthlyData[i].yearMonth,
-      rollingKG: sumKG,
-      rollingFOB: sumFOB,
-    });
-  }
-  
-  const finalFilteredData = rollingSumData.filter(d => {
-      const year = parseInt(d.yearMonth.substring(0,4));
-      const month = parseInt(d.yearMonth.substring(5,7));
-      return year > 2019 || (year === 2019 && month === 12); 
-  });
-
-  if (finalFilteredData.length === 0 && rollingSumData.length > 0) {
-     console.log(`processRollingSumImportData: All ${rollingSumData.length} calculated rolling sum data points were filtered out by the final date condition (sum must end Dec 2019 or later). First sum was for ${rollingSumData[0].yearMonth}.`);
-  } else if (finalFilteredData.length === 0 && rollingSumData.length === 0 && sortedFullMonthlyData.length >= windowSize) {
-     console.log(`processRollingSumImportData: No rolling sum data was generated, yet had enough initial monthly points (${sortedFullMonthlyData.length}). This state should be investigated.`);
-  }
-
-  return finalFilteredData;
 }
 
 // --- SURGE ANALYSIS FUNCTIONS ---

@@ -1,160 +1,130 @@
-
 import * as XLSX from 'xlsx';
 import { CgimNcmInfo, EntityContactInfo, NfeData } from '../types.ts';
+import { normalizeNcm } from '../utils/formatting.ts';
 
-export async function parseCgimDinteExcel(file: File): Promise<{ cgimNcmInfo: CgimNcmInfo | string; entityContacts: EntityContactInfo[] | string }> {
-  const arrayBuffer = await file.arrayBuffer();
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+/** Abas de entidades lidas pelo notebook (célula 38). */
+export const ENTITY_SHEETS = ["ABAL", "ABIVIDRO", "IABR", "ABITAM", "SICETEL", "IBÁ", "ABCOBRE", "IBRAM", "SINDICEL", "ABRAFE", "ABIROCHAS", "ABIMCI", "SINDIFER"];
 
-  let cgimNcmInfo: CgimNcmInfo | string = "Produto não é de competência da CGIM";
-  const ncmSheetName = "NCMs-CGIM-DINTE";
-  if (workbook.SheetNames.includes(ncmSheetName)) {
-    const ncmSheet = workbook.Sheets[ncmSheetName];
-    const ncmData = XLSX.utils.sheet_to_json<any>(ncmSheet);
-    // This function will be called with ncmCode, so filtering will happen in App.tsx
-    // For now, it returns all data, or a placeholder structure if the sheet is empty.
-    // The actual filtering by NCM code needs to be done after calling this.
-    // This function provides the raw parsed data.
-    // The python script returns a single row or a message. We'll simulate this by returning the array.
-     cgimNcmInfo = ncmData.length > 0 ? "data_available_for_filtering" : "Produto não é de competência da CGIM"; // Placeholder
-  } else {
-    cgimNcmInfo = `Aba "${ncmSheetName}" não encontrada no arquivo.`;
-  }
-  
-  const entitySheets = ["ABITAM", "IABR", "ABAL", "ABCOBRE", "ABRAFE", "IBÁ", "SICETEL", "SINDIFER"];
-  let allEntityContacts: EntityContactInfo[] = [];
+const norm = (s: string) => s.normalize('NFC').trim().toUpperCase();
 
-  for (const sheetName of entitySheets) {
-    if (workbook.SheetNames.includes(sheetName)) {
-      const entitySheet = workbook.Sheets[sheetName];
-      // Python code uses usecols="A,T:AE". XLSX reads all columns. We filter later.
-      const entityData = XLSX.utils.sheet_to_json<any>(entitySheet);
-      // The python script filters by NCM here. We'll filter in App.tsx.
-      // Add Aba identifier
-      const sheetContacts = entityData.map(row => ({
-        ...row, // Assuming column names match EntityContactInfo or will be mapped
-        'Aba': sheetName,
-        // Map specific columns if names differ, e.g. row['NCM'] or row[excel_column_header_for_ncm]
-        'NCM': String(row['NCM'] || row[Object.keys(row)[0]]), // Assuming NCM is the first column
-         // Map other columns from T:AE (index 19 to 30)
-        'Sigla Entidade': row[Object.keys(row)[19]],
-        'Entidade': row[Object.keys(row)[20]],
-        // ... and so on for other contact fields
-      }));
-      allEntityContacts.push(...sheetContacts);
-    }
-  }
-  
-  const entityContactsResult = allEntityContacts.length > 0 ? "data_available_for_filtering_entities" : `Não há informação sobre a entidade responsável.`;
-
-  // Actual filtering by NCM code will be done in the component using this data.
-  // For now, returning the raw (or semi-processed) data.
-  return { 
-    cgimNcmInfo: cgimNcmInfo, // This will be the array of CgimNcmInfo to be filtered by NCM
-    entityContacts: entityContactsResult // This will be the array of EntityContactInfo to be filtered by NCM
-  };
+function findSheet(workbook: XLSX.WorkBook, name: string): XLSX.WorkSheet | undefined {
+  const real = workbook.SheetNames.find(n => norm(n) === norm(name));
+  return real ? workbook.Sheets[real] : undefined;
 }
 
-
-// A more robust parser for CGIM/DINTE that returns structures to be filtered.
+/**
+ * Planilha 20241011_NCMs-CGIM-DINTE.xlsx.
+ * - Aba "NCMs-CGIM-DINTE": dados de competência por NCM.
+ * - Abas de entidades: coluna A (NCM) e colunas T:AE (contatos), com os cabeçalhos da própria planilha.
+ */
 export async function parseCgimDinteExcelForFiltering(file: File): Promise<{
   cgimData: CgimNcmInfo[];
   entityData: EntityContactInfo[];
+  entityColumns: string[];
+  missingSheets: string[];
 }> {
-  const arrayBuffer = await file.arrayBuffer();
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
 
-  let parsedCgimData: CgimNcmInfo[] = [];
-  const ncmSheetName = "NCMs-CGIM-DINTE";
-  if (workbook.SheetNames.includes(ncmSheetName)) {
-    const ncmSheet = workbook.Sheets[ncmSheetName];
-    const jsonData = XLSX.utils.sheet_to_json<any>(ncmSheet);
-    parsedCgimData = jsonData.map(row => ({
-      'NCM': String(row['NCM']), // Important for filtering
-      'Departamento Responsável': row['Departamento Responsável'],
-      'Coordenação-Geral Responsável': row['Coordenação-Geral Responsável'],
-      'Agrupamento': row['Agrupamento'],
-      'Setores': row['Setores'],
-      'Subsetores': row['Subsetores'],
-      'Produtos': row['Produtos'],
-    }));
-  }
-
-  const entitySheets = ["ABITAM", "IABR", "ABAL", "ABCOBRE", "ABRAFE", "IBÁ", "SICETEL", "SINDIFER"];
-  let parsedEntityData: EntityContactInfo[] = [];
-
-  for (const sheetName of entitySheets) {
-    if (workbook.SheetNames.includes(sheetName)) {
-      const entitySheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json<any>(entitySheet);
-      
-      // Define expected headers based on Python T:AE (cols 19 to 30 if 0-indexed)
-      // This mapping is crucial and depends on the exact Excel structure.
-      // The Python script implies direct header names like 'Sigla Entidade', etc.
-      // are present in columns T onwards.
-      
-      jsonData.forEach(row => {
-        // Ensure NCM is read as string
-        const ncmValue = row['NCM'] ? String(row['NCM']) : (row[Object.keys(row)[0]] ? String(row[Object.keys(row)[0]]) : undefined);
-
-        // Map specific columns based on known headers or positions (T:AE)
-        // This part is tricky without knowing exact headers in T:AE. Assuming they match EntityContactInfo keys.
-        parsedEntityData.push({
-          'Aba': sheetName,
-          'NCM': ncmValue,
-          'Sigla Entidade': row['Sigla Entidade'],
-          'Entidade': row['Entidade'],
-          'Nome do Dirigente': row['Nome do Dirigente'],
-          'Cargo': row['Cargo'],
-          'E-mail': row['E-mail'],
-          'Telefone': row['Telefone'],
-          'Celular': row['Celular'],
-          'Contato Importante': row['Contato Importante'],
-          'Cargo (Contato Importante)': row['Cargo (Contato Importante)'],
-          'E-mail (Contato Importante)': row['E-mail (Contato Importante)'],
-          'Telefone (Contato Importante)': row['Telefone (Contato Importante)'],
-          'Celular (Contato Importante)': row['Celular (Contato Importante)'],
-        });
+  const cgimData: CgimNcmInfo[] = [];
+  const ncmSheet = findSheet(workbook, "NCMs-CGIM-DINTE");
+  if (ncmSheet) {
+    XLSX.utils.sheet_to_json<any>(ncmSheet, { defval: '' }).forEach(row => {
+      cgimData.push({
+        'NCM': normalizeNcm(row['NCM']),
+        'Departamento Responsável': row['Departamento Responsável'],
+        'Coordenação-Geral Responsável': row['Coordenação-Geral Responsável'],
+        'Agrupamento': row['Agrupamento'],
+        'Setores': row['Setores'],
+        'Subsetores': row['Subsetores'],
+        'Produtos': row['Produtos'],
       });
-    }
+    });
   }
-  return { cgimData: parsedCgimData, entityData: parsedEntityData };
+
+  const entityData: EntityContactInfo[] = [];
+  const entityColumns: string[] = [];
+  const missingSheets: string[] = [];
+  const FIRST_COL = 19; // T
+  const LAST_COL = 30;  // AE
+
+  for (const sheetName of ENTITY_SHEETS) {
+    const sheet = findSheet(workbook, sheetName);
+    if (!sheet) { missingSheets.push(sheetName); continue; }
+    const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: '', raw: false });
+    if (rows.length === 0) continue;
+    const header = rows[0].map((h: any) => String(h ?? '').trim());
+    for (let c = FIRST_COL; c <= LAST_COL; c++) {
+      const h = header[c] || `Coluna ${XLSX.utils.encode_col(c)}`;
+      if (!entityColumns.includes(h)) entityColumns.push(h);
+    }
+    rows.slice(1).forEach(r => {
+      const ncm = normalizeNcm(r[0]);
+      if (!ncm) return;
+      const rec: EntityContactInfo = { 'Aba': sheetName, 'NCM': ncm };
+      for (let c = FIRST_COL; c <= LAST_COL; c++) {
+        const h = header[c] || `Coluna ${XLSX.utils.encode_col(c)}`;
+        rec[h] = String(r[c] ?? '').trim();
+      }
+      entityData.push(rec);
+    });
+  }
+  return { cgimData, entityData, entityColumns, missingSheets };
 }
 
-
+/** Planilha de NF-e (aba "Dados"), ex.: dados_nfe_2016_2025_ajustado.xlsx */
 export async function parseNfeExcel(file: File): Promise<NfeData[]> {
-  const arrayBuffer = await file.arrayBuffer();
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-  
-  const sheetName = "Dados"; // As per Python script
-  if (!workbook.SheetNames.includes(sheetName)) {
-    throw new Error(`Aba "${sheetName}" não encontrada no arquivo NFE.`);
-  }
-  
-  const nfeSheet = workbook.Sheets[sheetName];
-  const nfeDataJson = XLSX.utils.sheet_to_json<any>(nfeSheet);
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  const sheet = findSheet(workbook, "Dados");
+  if (!sheet) throw new Error(`Aba "Dados" não encontrada no arquivo de NF-e.`);
 
-  // Map to NfeData, ensuring types and handling potential missing columns
-  return nfeDataJson.map(row => ({
-    ano: Number(row['ano']),
-    ncm_8d: String(row['ncm_8d']),
-    valor_producao: Number(row['valor_producao']),
-    qtd_tributavel_producao: Number(row['qtd_tributavel_producao']),
-    valor_exp: Number(row['valor_exp']),
-    qtd_tributavel_exp: Number(row['qtd_tributavel_exp']),
-    valor_cif_imp_dolar: Number(row['valor_cif_imp_dolar']),
-    qtd_tributavel_imp: Number(row['qtd_tributavel_imp']),
-    cambio_dolar_medio: Number(row['cambio_dolar_medio']),
-    valor_cif_imp_reais: Number(row['valor_cif_imp_reais']),
-    coeficiente_penetracao_imp_valor: Number(row['coeficiente_penetracao_imp_valor']),
-    coeficiente_penetracao_imp_qtd: Number(row['coeficiente_penetracao_imp_qtd']),
-    coeficiente_exp_valor: Number(row['coeficiente_exp_valor']),
-    coeficiente_exp_qtd: Number(row['coeficiente_exp_qtd']),
-    consumo_nacional_aparente_valor: Number(row['consumo_nacional_aparente_valor']),
-    consumo_nacional_aparente_qtd: Number(row['consumo_nacional_aparente_qtd']),
-    disponibilidade_total_valor: Number(row['disponibilidade_total_valor']),
-    disponibilidade_total_qtd: Number(row['disponibilidade_total_qtd']),
-    // 'Vendas internas (KG)' is calculated in Python. We will do it in dataProcessing.ts or assume it's added there.
-    // If the excel HAS this column, map it: 'Vendas internas (KG)': Number(row['Vendas internas (KG)'])
+  const num = (v: any) => (v === '' || v === null || v === undefined ? undefined : Number(v));
+  return XLSX.utils.sheet_to_json<any>(sheet).map(row => ({
+    ano: num(row['ano']),
+    ncm_8d: normalizeNcm(row['ncm_8d']),
+    valor_producao: num(row['valor_producao']),
+    qtd_tributavel_producao: num(row['qtd_tributavel_producao']),
+    valor_exp: num(row['valor_exp']),
+    qtd_tributavel_exp: num(row['qtd_tributavel_exp']),
+    valor_cif_imp_dolar: num(row['valor_cif_imp_dolar']),
+    qtd_tributavel_imp: num(row['qtd_tributavel_imp']),
+    cambio_dolar_medio: num(row['cambio_dolar_medio']),
+    valor_cif_imp_reais: num(row['valor_cif_imp_reais']),
+    coeficiente_penetracao_imp_valor: num(row['coeficiente_penetracao_imp_valor']),
+    coeficiente_penetracao_imp_qtd: num(row['coeficiente_penetracao_imp_qtd']),
+    coeficiente_exp_valor: num(row['coeficiente_exp_valor']),
+    coeficiente_exp_qtd: num(row['coeficiente_exp_qtd']),
+    consumo_nacional_aparente_valor: num(row['consumo_nacional_aparente_valor']),
+    consumo_nacional_aparente_qtd: num(row['consumo_nacional_aparente_qtd']),
+    disponibilidade_total_valor: num(row['disponibilidade_total_valor']),
+    disponibilidade_total_qtd: num(row['disponibilidade_total_qtd']),
   }));
+}
+
+export interface SheetSpec {
+  name: string;
+  rows: Record<string, any>[];
+  /** colunas na ordem desejada: [chave no objeto, título na planilha] */
+  columns?: [string, string][];
+}
+
+/** Gera um .xlsx com várias abas e dispara o download. Valores numéricos são gravados como números. */
+export function downloadWorkbook(fileName: string, sheets: SheetSpec[]) {
+  const wb = XLSX.utils.book_new();
+  const used = new Set<string>();
+  sheets.forEach(({ name, rows, columns }) => {
+    if (!rows || rows.length === 0) return;
+    const data = columns
+      ? rows.map(r => Object.fromEntries(columns.map(([k, h]) => [h, r[k] ?? null])))
+      : rows;
+    const ws = XLSX.utils.json_to_sheet(data);
+    const header = Object.keys(data[0] ?? {});
+    ws['!cols'] = header.map(h => ({ wch: Math.min(45, Math.max(10, h.length + 2)) }));
+    let sheetName = name.replace(/[\\/?*[\]:]/g, '-').slice(0, 31);
+    let i = 2;
+    while (used.has(sheetName)) sheetName = `${name.slice(0, 28)} ${i++}`;
+    used.add(sheetName);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+  if (wb.SheetNames.length === 0) throw new Error('Não há dados para exportar.');
+  XLSX.writeFile(wb, fileName);
 }
