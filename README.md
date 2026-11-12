@@ -1,14 +1,21 @@
-# Run and deploy your AI Studio app
+# Analisador Comex Stat NCM
 
-This contains everything you need to run your app locally.
+Aplicação web (React + Vite) que gera a ficha de comércio exterior de uma NCM com dados da API Comex Stat (MDIC), espelhando o notebook `Ficha_NCM_individual.ipynb`:
 
-## Run Locally
+- Séries anuais desde 2004 (US$ FOB, kg, quantidade estatística, CIF, frete, seguro, balança e preços médios), com o ano corrente e o mesmo período do ano anterior (até o último mês disponível).
+- Quadros resumo de variação anual de importações e exportações.
+- Gráficos anuais, preços médios, balança comercial e importações acumuladas em 12 meses.
+- Blocos de 12 meses (P1–P5) com as comparações P5 vs P4, P5 vs Média(P2:P4) e P5 vs Média(P1:P4).
+- Análise de surto de importação.
+- Origem/destino por país (ano anterior completo e ano corrente até o mês), com treemaps em US$ FOB e kg.
+- Planilhas internas (CGIM/DINTE e NF-e) lidas no navegador, por upload.
+- Exportação para Excel e geração da **Ficha individual da NCM em Word (.docx)**.
 
-**Prerequisites:**  Node.js
+## Rodar localmente
 
+```bash
+npm install
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+O deploy no Netlify usa `npm run build` e publica a pasta `dist` (ver `netlify.toml`).

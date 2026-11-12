@@ -1,55 +1,48 @@
-
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 interface FileUploadProps {
   onFileUpload: (file: File) => void;
   label: string;
-  acceptedFileTypes?: string; // e.g., ".xlsx,.xls"
+  hint?: string;
+  acceptedFileTypes?: string;
   loading?: boolean;
   fileName?: string | null;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, acceptedFileTypes, loading, fileName }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, hint, acceptedFileTypes = '.xlsx,.xls', loading, fileName }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  const [drag, setDrag] = useState(false);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      onFileUpload(event.target.files[0]);
-      // Reset file input to allow re-uploading the same file
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
+  const take = (files: FileList | null) => {
+    if (files && files[0]) onFileUpload(files[0]);
+    if (ref.current) ref.current.value = '';
   };
 
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <div className="flex items-center space-x-2">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept={acceptedFileTypes}
-          className="hidden"
-          id={`file-upload-${label.replace(/\s+/g, '-')}`}
-          disabled={loading}
-        />
+    <div
+      onDragOver={e => { e.preventDefault(); setDrag(true); }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={e => { e.preventDefault(); setDrag(false); take(e.dataTransfer.files); }}
+      className={`rounded-xl border-2 border-dashed p-4 transition ${drag ? 'border-brand-500 bg-brand-50' : fileName ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-300 bg-slate-50'}`}
+    >
+      <p className="text-sm font-semibold text-slate-800">{label}</p>
+      {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+      <div className="mt-3 flex items-center gap-3">
+        <input type="file" ref={ref} onChange={e => take(e.target.files)} accept={acceptedFileTypes} className="hidden" disabled={loading} />
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => ref.current?.click()}
           disabled={loading}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
         >
-          {loading ? 'Processando...' : (fileName ? 'Substituir Arquivo' : 'Selecionar Arquivo')}
+          {loading ? 'Processando…' : fileName ? 'Substituir arquivo' : 'Selecionar arquivo'}
         </button>
-        {fileName && <span className="text-sm text-gray-600 truncate" title={fileName}>{fileName}</span>}
+        <span className="truncate text-xs text-slate-500" title={fileName ?? undefined}>
+          {fileName ? <>✓ {fileName}</> : 'ou arraste o arquivo aqui'}
+        </span>
       </div>
-       {acceptedFileTypes === ".xlsx,.xls" && <p className="text-xs text-gray-500 mt-1">Apenas arquivos Excel (.xlsx, .xls)</p>}
     </div>
   );
 };
 
 export default FileUpload;
-
-    

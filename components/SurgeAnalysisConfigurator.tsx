@@ -27,12 +27,10 @@ const SurgeAnalysisConfigurator: React.FC<SurgeAnalysisConfiguratorProps> = ({ o
     if (lastUpdateData?.year && lastUpdateData?.month) {
       setEndYear(lastUpdateData.year);
       setEndMonth(lastUpdateData.month);
-      // Also adjust startYear if it was based on a different default
-      if (startYear > lastUpdateData.year) {
-        setStartYear(lastUpdateData.year);
-      }
+      setStartYear(lastUpdateData.year);
     }
-  }, [lastUpdateData, startYear]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastUpdateData?.year, lastUpdateData?.month]);
 
 
   const handleSubmit = () => {
@@ -79,66 +77,41 @@ const SurgeAnalysisConfigurator: React.FC<SurgeAnalysisConfiguratorProps> = ({ o
     onCalculate({ startYear: sYear, startMonth: sMonth, endYear: eYear, endMonth: eMonth });
   };
 
+  const sel = "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm capitalize text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100";
   return (
-    <div className="p-4 border rounded-lg bg-gray-50 mb-6">
-      <h3 className="text-lg font-semibold mb-3 text-gray-700">Configurar Período para Análise de Surto</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-        {/* Start Period */}
+    <div className="rounded-xl bg-slate-50 p-4">
+      <div className="flex flex-wrap items-end gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Período Inicial:</label>
-          <div className="flex space-x-2">
-            <select
-              value={startMonth}
-              onChange={(e) => setStartMonth(Number(e.target.value))}
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              disabled={isLoading}
-            >
-              {months.map(m => <option key={`start-m-${m}`} value={m}>{getMonthNamePtBR(m)}</option>)}
+          <label className="mb-1 block text-xs font-medium text-slate-500">Início do período</label>
+          <div className="flex gap-2">
+            <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className={sel} disabled={isLoading}>
+              {months.map(m => <option key={`sm-${m}`} value={m}>{getMonthNamePtBR(m)}</option>)}
             </select>
-            <select
-              value={startYear}
-              onChange={(e) => setStartYear(Number(e.target.value))}
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              disabled={isLoading}
-            >
-              {availableYears.map(y => <option key={`start-y-${y}`} value={y}>{y}</option>)}
+            <select value={startYear} onChange={e => setStartYear(Number(e.target.value))} className={sel} disabled={isLoading}>
+              {availableYears.map(y => <option key={`sy-${y}`} value={y}>{y}</option>)}
             </select>
           </div>
         </div>
-
-        {/* End Period */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">Período Final:</label>
-          <div className="flex space-x-2">
-            <select
-              value={endMonth}
-              onChange={(e) => setEndMonth(Number(e.target.value))}
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              disabled={isLoading}
-            >
-              {months.map(m => <option key={`end-m-${m}`} value={m}>{getMonthNamePtBR(m)}</option>)}
+          <label className="mb-1 block text-xs font-medium text-slate-500">Fim do período</label>
+          <div className="flex gap-2">
+            <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className={sel} disabled={isLoading}>
+              {months.map(m => <option key={`em-${m}`} value={m}>{getMonthNamePtBR(m)}</option>)}
             </select>
-            <select
-              value={endYear}
-              onChange={(e) => setEndYear(Number(e.target.value))}
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              disabled={isLoading}
-            >
-              {availableYears.map(y => <option key={`end-y-${y}`} value={y}>{y}</option>)}
+            <select value={endYear} onChange={e => setEndYear(Number(e.target.value))} className={sel} disabled={isLoading}>
+              {availableYears.map(y => <option key={`ey-${y}`} value={y}>{y}</option>)}
             </select>
           </div>
         </div>
+        <button
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-50"
+        >
+          {isLoading ? 'Analisando…' : 'Analisar surto'}
+        </button>
       </div>
-
-      {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
-
-      <button
-        onClick={handleSubmit}
-        disabled={isLoading}
-        className="mt-4 w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 disabled:opacity-50"
-      >
-        {isLoading ? 'Analisando...' : 'Analisar Surto de Importação'}
-      </button>
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </div>
   );
 };
