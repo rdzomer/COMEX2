@@ -116,7 +116,9 @@ const App: React.FC = () => {
     const annual = (async () => {
       setStep('annual', 'running');
       try {
-        const full: Period = { from: '2004-01', to: `${Y}-${MM}` };
+        // A API aplica o intervalo de meses a cada ano: para anos completos o período precisa ir até dezembro
+        // (como no notebook). O ano corrente vem naturalmente só até o último mês disponível.
+        const full: Period = { from: '2004-01', to: `${Y}-12` };
         const prevYtd: Period = { from: `${Y - 1}-01`, to: `${Y - 1}-${MM}` };
         const [exp, imp, expPrev, impPrev] = await Promise.all([
           fetchComexData('export', full, filters, EXP_IMP, ['ncm']),
@@ -254,7 +256,14 @@ const App: React.FC = () => {
   }, [annualRows]);
 
   const ncmStr = ncmCode ? `NCM ${formatNcmCode(ncmCode)}` : '';
-  const periodLabel = (r?: ProcessedTradeData) => r ? (r.kind === 'ytd' ? `jan–${getMonthNamePtBR(M!).slice(0, 3)}/${r.yearNumeric}` : String(r.yearNumeric)) : '';
+  const periodLabel = (r?: ProcessedTradeData) => r ? (r.kind !== 'full' ? `jan–${getMonthNamePtBR(M!).slice(0, 3)}/${r.yearNumeric}` : String(r.yearNumeric)) : '';
+  const money = (v: number | undefined) => {
+    const x = v || 0, abs = Math.abs(x);
+    const [div, unit] = abs >= 1e9 ? [1e9, 'US$ bi'] : abs >= 1e6 ? [1e6, 'US$ mi'] : [1e3, 'US$ mil'];
+    const n = x / div;
+    return { value: new Intl.NumberFormat('pt-BR', { maximumFractionDigits: Math.abs(n) < 100 ? 1 : 0 }).format(n), unit };
+  };
+  const tons = (kg: number | undefined) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: (kg || 0) < 1e5 ? 1 : 0 }).format((kg || 0) / 1e3);
 
   // ---------------------------------------------------------------------------
   // Análise de surto (inalterada)
@@ -676,12 +685,12 @@ const App: React.FC = () => {
 
             {kpi && (
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-                <KpiCard label={`Importações · ${periodLabel(kpi.cur)}`} value={formatIntegerPtBR((kpi.cur['Importações (US$ FOB)'] || 0) / 1e6 >= 1 ? (kpi.cur['Importações (US$ FOB)'] || 0) / 1e6 : (kpi.cur['Importações (US$ FOB)'] || 0) / 1e3)} unit={(kpi.cur['Importações (US$ FOB)'] || 0) >= 1e6 ? 'US$ mi' : 'US$ mil'} delta={kpi.d('Importações (US$ FOB)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
-                <KpiCard label={`Importações (kg) · ${periodLabel(kpi.cur)}`} value={formatIntegerPtBR((kpi.cur['Importações (KG)'] || 0) / 1e3)} unit="t" delta={kpi.d('Importações (KG)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
-                <KpiCard label={`Exportações · ${periodLabel(kpi.cur)}`} value={formatIntegerPtBR((kpi.cur['Exportações (US$ FOB)'] || 0) / 1e6 >= 1 ? (kpi.cur['Exportações (US$ FOB)'] || 0) / 1e6 : (kpi.cur['Exportações (US$ FOB)'] || 0) / 1e3)} unit={(kpi.cur['Exportações (US$ FOB)'] || 0) >= 1e6 ? 'US$ mi' : 'US$ mil'} delta={kpi.d('Exportações (US$ FOB)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
-                <KpiCard label={`Balança comercial · ${periodLabel(kpi.cur)}`} value={formatIntegerPtBR(Math.abs(kpi.cur['Balança Comercial (FOB)'] || 0) >= 1e6 ? (kpi.cur['Balança Comercial (FOB)'] || 0) / 1e6 : (kpi.cur['Balança Comercial (FOB)'] || 0) / 1e3)} unit={Math.abs(kpi.cur['Balança Comercial (FOB)'] || 0) >= 1e6 ? 'US$ mi' : 'US$ mil'} hint={(kpi.cur['Balança Comercial (FOB)'] || 0) >= 0 ? 'superávit' : 'déficit'} />
+                <KpiCard label={`Importações · ${periodLabel(kpi.cur)}`} {...money(kpi.cur['Importações (US$ FOB)'])} delta={kpi.d('Importações (US$ FOB)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
+                <KpiCard label={`Importações (kg) · ${periodLabel(kpi.cur)}`} value={tons(kpi.cur['Importações (KG)'])} unit="t" delta={kpi.d('Importações (KG)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
+                <KpiCard label={`Exportações · ${periodLabel(kpi.cur)}`} {...money(kpi.cur['Exportações (US$ FOB)'])} delta={kpi.d('Exportações (US$ FOB)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
+                <KpiCard label={`Balança comercial · ${periodLabel(kpi.cur)}`} {...money(kpi.cur['Balança Comercial (FOB)'])} hint={(kpi.cur['Balança Comercial (FOB)'] || 0) >= 0 ? 'superávit' : 'déficit'} />
                 <KpiCard label="Preço médio de importação" value={formatDecimalPtBR(kpi.cur['Preço Médio Importação (US$/KG)'] ?? null)} unit="US$/kg" delta={kpi.d('Preço Médio Importação (US$/KG)')} deltaLabel={`vs ${periodLabel(kpi.base)}`} />
-                <KpiCard label="Importações · últimos 12 meses" value={twelveMonth ? formatIntegerPtBR(twelveMonth.blocks[0].importacaoKg / 1e3) : '–'} unit="t" delta={twelveMonth?.comparisons[0].resultado != null ? twelveMonth.comparisons[0].resultado * 100 : null} deltaLabel="vs 12 meses anteriores" />
+                <KpiCard label="Importações · últimos 12 meses" value={twelveMonth ? tons(twelveMonth.blocks[0].importacaoKg) : '–'} unit="t" delta={twelveMonth?.comparisons[0].resultado != null ? twelveMonth.comparisons[0].resultado * 100 : null} deltaLabel="vs 12 meses anteriores" />
               </div>
             )}
             {dataReady && !hasAnyTrade && (
