@@ -7,6 +7,7 @@ import SurgeAnalysisConfigurator from './components/SurgeAnalysisConfigurator.ts
 import SurgeAnalysisDisplay from './components/SurgeAnalysisDisplay.tsx';
 import { ChartCard, KpiCard, Button, SegmentedControl, SectionPicker, Swatch, Icons } from './components/ui.tsx';
 import { AnnualBarChart, PriceLineChart, TradeBalanceChart, RollingSumChart, CountryTreemap, COLORS } from './components/charts/ChartKit.tsx';
+import CestasView from './components/cestas/CestasView.tsx';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
 
 import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryData } from './services/comexApiService.ts';
@@ -44,12 +45,17 @@ interface Step { key: string; label: string; status: StepStatus }
 
 type CgimParsed = Awaited<ReturnType<typeof parseCgimDinteExcelForFiltering>>;
 
+type Mode = 'ficha' | 'cestas';
+const modeFromHash = (): Mode => (window.location.hash.startsWith('#/cestas') ? 'cestas' : 'ficha');
+
 const App: React.FC = () => {
+  const [mode, setMode] = useState<Mode>(modeFromHash);
   const [ncmCode, setNcmCode] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const loading = steps.some(s => s.status === 'running' || s.status === 'pending');
   const requestId = useRef(0);
+  const currentNcmRef = useRef<string | null>(null);
 
   const [lastUpdateData, setLastUpdateData] = useState<LastUpdateData | null>(null);
   const [ncmDetails, setNcmDetails] = useState<NcmDetails | null>(null);
@@ -77,6 +83,9 @@ const App: React.FC = () => {
   // ---------------------------------------------------------------------------
   const handleNcmSubmit = async (code: string) => {
     const myId = ++requestId.current;
+    currentNcmRef.current = code;
+    if (window.location.hash !== `#/ncm/${code}`) window.history.replaceState(null, '', `#/ncm/${code}`);
+    setMode('ficha');
     const alive = () => requestId.current === myId;
     setNcmCode(code);
     setErrors([]);
@@ -170,6 +179,22 @@ const App: React.FC = () => {
 
     await Promise.all([annual, monthly, countries]);
   };
+
+  // Navegação: #/cestas abre as cestas; #/ncm/XXXXXXXX abre a ficha da NCM
+  useEffect(() => {
+    const onHash = () => {
+      setMode(modeFromHash());
+      const m = window.location.hash.match(/^#\/ncm\/(\d{8})/);
+      if (m && m[1] !== currentNcmRef.current) handleNcmSubmit(m[1]);
+    };
+    onHash();
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => { currentNcmRef.current = ncmCode; }, [ncmCode]);
+  const goTo = (m: Mode) => { window.location.hash = m === 'cestas' ? '#/cestas' : (ncmCode ? `#/ncm/${ncmCode}` : '#/'); window.scrollTo(0, 0); };
+  const openNcmFromCesta = (code: string) => { window.location.hash = `#/ncm/${code}`; window.scrollTo(0, 0); };
 
   // ---------------------------------------------------------------------------
   // Planilhas enviadas pelo usuário (lidas uma vez, filtradas pela NCM atual)
@@ -601,16 +626,21 @@ const App: React.FC = () => {
       {/* Barra superior */}
       <header className="sticky top-0 z-30 bg-brand-900 text-white shadow">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-3 md:px-8">
-          <button onClick={() => window.location.reload()} className="flex items-center gap-2.5 text-left" title="Início">
+          <button onClick={() => { window.location.hash = ''; window.location.reload(); }} className="flex items-center gap-2.5 text-left" title="Início">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-sm font-bold">CS</span>
             <span>
               <span className="block text-sm font-semibold leading-tight">Analisador Comex Stat NCM</span>
               <span className="block text-[11px] leading-tight text-white/60">Ficha individual da NCM</span>
             </span>
           </button>
-          {ncmCode && <div className="ml-auto w-full md:w-auto md:min-w-[22rem]"><NcmInput onSubmit={handleNcmSubmit} loading={loading} /></div>}
+          <div className="flex rounded-lg bg-white/10 p-0.5">
+            {([['ficha', 'Ficha por NCM'], ['cestas', 'Cestas por entidade']] as [Mode, string][]).map(([m, label]) => (
+              <button key={m} onClick={() => goTo(m)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === m ? 'bg-white text-brand-900' : 'text-white/70 hover:text-white'}`}>{label}</button>
+            ))}
+          </div>
+          {mode === 'ficha' && ncmCode && <div className="ml-auto w-full md:w-auto md:min-w-[22rem]"><NcmInput onSubmit={handleNcmSubmit} loading={loading} /></div>}
         </div>
-        {dataReady && (
+        {mode === 'ficha' && dataReady && (
           <nav className="border-t border-white/10 bg-brand-900/95">
             <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 md:px-8">
               {nav.map(n => (
@@ -622,6 +652,8 @@ const App: React.FC = () => {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-8">
+        {mode === 'cestas' && <CestasView onOpenNcm={openNcmFromCesta} />}
+        <div className={mode === 'cestas' ? 'hidden' : ''}>
         {/* Tela inicial */}
         {!ncmCode && (
           <div className="mx-auto mt-10 max-w-2xl text-center">
@@ -629,6 +661,9 @@ const App: React.FC = () => {
             <p className="mt-3 text-slate-600">Séries históricas desde 2004, importações acumuladas em 12 meses, análise de surto, origem e destino por país e a Ficha individual em Word, com dados da API Comex Stat (MDIC).</p>
             <div className="mt-8 flex justify-center"><NcmInput onSubmit={handleNcmSubmit} loading={loading} variant="hero" /></div>
             <p className="mt-3 text-xs text-slate-500">Aceita o código com ou sem pontos: 7213.10.00 ou 72131000.</p>
+            <button onClick={() => goTo('cestas')} className="mt-10 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm hover:border-brand-500 hover:text-brand-600">
+              Ou analise as cestas de NCMs por entidade (ABAL, IABR, IBÁ…) →
+            </button>
           </div>
         )}
 
@@ -830,6 +865,7 @@ const App: React.FC = () => {
             )}
           </Section>
         )}
+        </div>
       </main>
 
       <footer className="mt-6 border-t border-slate-200 py-6 text-center text-xs text-slate-500">
