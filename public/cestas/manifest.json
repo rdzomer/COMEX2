@@ -1,5 +1,5 @@
 {
- "geradoEm": "2026-11-16T13:07:01.278Z",
+ "geradoEm": "2026-11-16T14:03:58.258Z",
  "atualizacao": {
   "ano": 2026,
   "mes": 10,
@@ -7,11 +7,12 @@
  },
  "dicionarioHash": "72a5ad0a2115458d+8b6466bed94d1b4b",
  "dicionarioFonte": "cgim_dinte.xlsx",
- "chamadasApi": 65,
+ "chamadasApi": 193,
  "entidades": [
   {
    "id": "ABAL",
    "rotulo": "ABAL",
+   "tipo": "entidade",
    "ncms": 74,
    "arquivo": "ABAL.json"
   },
@@ -25,42 +26,49 @@
   {
    "id": "ABIMCI",
    "rotulo": "ABIMCI",
+   "tipo": "entidade",
    "ncms": 94,
    "arquivo": "ABIMCI.json"
   },
   {
    "id": "ABIROCHAS",
    "rotulo": "ABIROCHAS",
+   "tipo": "entidade",
    "ncms": 24,
    "arquivo": "ABIROCHAS.json"
   },
   {
    "id": "ABITAM",
    "rotulo": "ABITAM",
+   "tipo": "entidade",
    "ncms": 70,
    "arquivo": "ABITAM.json"
   },
   {
    "id": "ABIVIDRO",
    "rotulo": "ABIVIDRO",
+   "tipo": "entidade",
    "ncms": 116,
    "arquivo": "ABIVIDRO.json"
   },
   {
    "id": "ABRAFE",
    "rotulo": "ABRAFE",
+   "tipo": "entidade",
    "ncms": 17,
    "arquivo": "ABRAFE.json"
   },
   {
    "id": "IABR",
    "rotulo": "IABR",
+   "tipo": "entidade",
    "ncms": 231,
    "arquivo": "IABR.json"
   },
   {
    "id": "IBA",
    "rotulo": "IBÁ",
+   "tipo": "entidade",
    "ncms": 250,
    "arquivo": "IBA.json"
   },
@@ -89,12 +97,14 @@
   {
    "id": "SINDICEL",
    "rotulo": "SINDICEL",
+   "tipo": "entidade",
    "ncms": 17,
    "arquivo": "SINDICEL.json"
   },
   {
    "id": "SINDIFER",
    "rotulo": "SINDIFER",
+   "tipo": "entidade",
    "ncms": 2,
    "arquivo": "SINDIFER.json"
   }
