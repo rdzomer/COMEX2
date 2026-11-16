@@ -1,0 +1,3009 @@
+{
+ "geradoEm": "2026-11-16T13:23:38.971Z",
+ "hash": "8b6466bed94d1b4b",
+ "fonte": "dados-fonte/minerais-criticos.json",
+ "cestas": [
+  {
+   "id": "MINERAIS",
+   "label": "Minerais críticos e estratégicos",
+   "tipo": "tematica",
+   "descricao": "27 minerais da lista do Conselho Nacional de Política Mineral (CIMCE), em três classes de prioridade. Cada NCM entra uma única vez (no mineral principal), para que as somas por classe não tenham dupla contagem.",
+   "fontes": [
+    {
+     "rotulo": "Secretaria-Geral da Presidência — Conselho aprova lista de 27 minerais críticos e estratégicos",
+     "url": "https://www.gov.br/secretariageral/pt-br/noticias/2026/novembro/conselho-nacional-aprova-lista-de-27-minerais-criticos-e-estrategicos"
+    },
+    {
+     "rotulo": "Brasil de Fato — Governo define 27 minerais estratégicos",
+     "url": "https://brasildefato.com.br/2026/11/05/governo-define-27-minerais-estrategicos-para-impulsionar-a-industrializacao-do-brasil/"
+    }
+   ],
+   "metodologia": [
+    "Classes conforme a deliberação da 1ª reunião do CIMCE (cinco critérios: risco geopolítico, concentração da oferta global, substituibilidade, posição da indústria brasileira na cadeia e dependência externa).",
+    "As NCMs foram escolhidas por este projeto a partir da Nomenclatura Comum do Mercosul (tabela oficial do Comex Stat): minério e concentrado, metal e ligas em formas brutas, ferroligas e principais compostos. Manufaturas e semimanufaturados (fios, chapas, tubos, baterias, ímãs etc.) ficam de fora.",
+    "NCMs compartilhadas por mais de um mineral foram atribuídas a um só: ferro-silício-manganês (7202.30) a manganês; urânio empobrecido e tório (2844.30) a urânio; minérios de nióbio, tântalo e vanádio (2615.90) a nióbio; minérios de metais preciosos (2616.90) a ouro; ferro-silício-cromo (7202.50) a cromo.",
+    "Entram os adubos fosfatados simples (superfosfatos, MAP e DAP) e os potássicos (cloreto e sulfato de potássio). Os adubos mistos NPK, NP e PK (31.05.20, .51, .59 e .60) ficam de fora, porque misturam nutrientes e gerariam dupla contagem entre fosfato e potássio.",
+    "Os códigos antigos da NCM foram mantidos junto com os atuais, para que as séries históricas não tenham buracos.",
+    "Esta lista é uma proposta de trabalho e pode ser editada: altere este arquivo no GitHub e a tarefa de atualização refaz o dicionário e reconsulta a API."
+   ],
+   "classes": [
+    {
+     "id": "I",
+     "nome": "Classe I — Prioridade alta",
+     "minerais": [
+      "Cobre",
+      "Silício",
+      "Níquel",
+      "Terras raras",
+      "Cobalto",
+      "Grafita",
+      "Lítio",
+      "Manganês",
+      "Urânio"
+     ]
+    },
+    {
+     "id": "II",
+     "nome": "Classe II — Prioridade intermediária",
+     "minerais": [
+      "Tungstênio",
+      "Cromo",
+      "Vanádio",
+      "Tântalo",
+      "Titânio",
+      "Fosfato",
+      "Potássio",
+      "Enxofre"
+     ]
+    },
+    {
+     "id": "III",
+     "nome": "Classe III — Prioridade baixa",
+     "minerais": [
+      "Nióbio",
+      "Estanho",
+      "Ferro",
+      "Zinco",
+      "Ouro",
+      "Magnésio",
+      "Molibdênio",
+      "Tório",
+      "Alumínio",
+      "Grupo da platina"
+     ]
+    }
+   ],
+   "detalhes": {
+    "Cobre": {
+     "classe": "I",
+     "criterio": "Minério e concentrado, mates, ânodos, cobre refinado (cátodos) e ligas em formas brutas, mais pós, resíduos e os óxidos e sulfatos de cobre.",
+     "fora": [
+      "Fios, barras, chapas, tubos e demais obras de cobre (74.07 a 74.19): semimanufaturados e manufaturas"
+     ]
+    },
+    "Silício": {
+     "classe": "I",
+     "criterio": "Quartzo e quartzito (matéria-prima do silício), silício metálico, ferro-silício e carboneto de silício.",
+     "fora": [
+      "Areias silicosas (25.05): insumo de construção e vidro, sem relação com o silício metálico",
+      "Sílica e silicones (28.11.22, 39.10): derivados químicos",
+      "Células e módulos fotovoltaicos (85.41): manufatura"
+     ]
+    },
+    "Níquel": {
+     "classe": "I",
+     "criterio": "Minério, mates, níquel e ligas em formas brutas, ferro-níquel e os principais compostos (óxidos, sulfato e cloreto).",
+     "fora": [
+      "Barras, chapas, fios e tubos de níquel (75.05 a 75.08)",
+      "Baterias de níquel (85.07)",
+      "Aço inoxidável, que é classificado como aço"
+     ]
+    },
+    "Terras raras": {
+     "classe": "I",
+     "criterio": "Minerais de terras raras (25.30.90.30), metais e ligas (mischmetal, ítrio, escândio), ferrocério e compostos (cério, óxidos e cloretos).",
+     "fora": [
+      "Ímãs permanentes (85.05.11): produto manufaturado"
+     ]
+    },
+    "Cobalto": {
+     "classe": "I",
+     "criterio": "Minério, mates e cobalto em formas brutas, pós e resíduos, além de óxidos, hidróxidos e cloretos de cobalto.",
+     "fora": [
+      "Obras de cobalto (81.05.90)",
+      "Baterias com cobalto (85.07.60)"
+     ]
+    },
+    "Grafita": {
+     "classe": "I",
+     "criterio": "Grafita natural e grafita artificial, incluindo a coloidal e a semicoloidal.",
+     "fora": [
+      "Eletrodos de grafita para fornos (85.45.11 e 85.45.19): manufatura",
+      "Pastas e preparações à base de grafita (38.01.30 e 38.01.90)"
+     ]
+    },
+    "Lítio": {
+     "classe": "I",
+     "criterio": "Espodumênio (minério), óxido e hidróxido de lítio, carbonato de lítio e cloreto de lítio.",
+     "fora": [
+      "Baterias e células de íon-lítio (85.07.60): manufatura",
+      "Sulfato e nitrato de lítio (28.33.29.20 e 28.34.29.40): compostos secundários"
+     ]
+    },
+    "Manganês": {
+     "classe": "I",
+     "criterio": "Minério e concentrado, manganês metálico, ferro-manganês, ferro-silício-manganês, óxidos, cloreto e permanganatos.",
+     "fora": [
+      "Pilhas de dióxido de manganês (85.06.10): manufatura"
+     ]
+    },
+    "Urânio": {
+     "classe": "I",
+     "criterio": "Minério de urânio, urânio natural, enriquecido e empobrecido (a NCM 28.44.30 inclui também o tório e seus compostos) e elementos combustíveis nucleares.",
+     "fora": [
+      "Reatores e suas partes (84.01.10 e 84.01.40)",
+      "Isótopos radioativos de uso médico (28.44.4x)"
+     ]
+    },
+    "Tungstênio": {
+     "classe": "II",
+     "criterio": "Minério, metal em formas brutas e pós, ferro-tungstênio, óxido, carbonetos e tungstatos.",
+     "fora": [
+      "Barras, chapas, fios e obras de tungstênio (81.01.92 a 81.01.99)",
+      "Ferramentas de metal duro (82.09)"
+     ]
+    },
+    "Cromo": {
+     "classe": "II",
+     "criterio": "Minério (cromita), cromo metálico em formas brutas, ferro-cromo e ferro-silício-cromo, óxidos, sulfatos, cloreto e cromatos.",
+     "fora": [
+      "Obras de cromo (81.12.29)",
+      "Pigmentos de cromo (32.06.20)",
+      "Aço inoxidável, que é classificado como aço"
+     ]
+    },
+    "Vanádio": {
+     "classe": "II",
+     "criterio": "Ferro-vanádio, vanádio metálico, óxidos de vanádio e vanadatos. O minério vem junto com nióbio e tântalo na NCM 26.15.90, que fica na linha do nióbio.",
+     "fora": [
+      "Minério de vanádio (26.15.90): NCM compartilhada, atribuída ao nióbio"
+     ]
+    },
+    "Tântalo": {
+     "classe": "II",
+     "criterio": "Tântalo em formas brutas, pós e resíduos, e carbonetos de tântalo. O minério está na NCM 26.15.90, na linha do nióbio.",
+     "fora": [
+      "Minério de tântalo (26.15.90): NCM compartilhada, atribuída ao nióbio",
+      "Obras de tântalo (81.03.90 e 81.03.99)"
+     ]
+    },
+    "Titânio": {
+     "classe": "II",
+     "criterio": "Ilmenita e outros minérios, titânio em formas brutas, ferro-titânio, óxidos, pigmentos de dióxido de titânio e cloreto de titânio.",
+     "fora": [
+      "Obras de titânio (81.08.90): manufatura",
+      "Titanatos (28.41.90)"
+     ]
+    },
+    "Fosfato": {
+     "classe": "II",
+     "criterio": "Rocha fosfática, ácido fosfórico e adubos fosfatados simples (superfosfatos, MAP e DAP).",
+     "fora": [
+      "Adubos mistos NPK, NP e PK (31.05.20, .51, .59 e .60): contêm outros nutrientes e gerariam dupla contagem com o potássio",
+      "Fosfatos industriais (28.35)"
+     ]
+    },
+    "Potássio": {
+     "classe": "II",
+     "criterio": "Cloreto e sulfato de potássio, outros sais potássicos naturais e nitrato de potássio.",
+     "fora": [
+      "Adubos mistos NPK e PK (31.05)",
+      "Hidróxido de potássio (28.15.20) e carbonato de potássio (28.36.40)"
+     ]
+    },
+    "Enxofre": {
+     "classe": "II",
+     "criterio": "Enxofre de qualquer forma e ácido sulfúrico (incluindo o óleum).",
+     "fora": [
+      "Sulfatos e sulfitos industriais",
+      "Dióxido de enxofre (28.11.23)"
+     ]
+    },
+    "Nióbio": {
+     "classe": "III",
+     "criterio": "Minério de nióbio, tântalo ou vanádio (26.15.90, NCM compartilhada), ferro-nióbio e nióbio metálico (81.12.91 e 81.12.92, posição compartilhada com gálio, índio e outros metais).",
+     "fora": [
+      "Óxidos de nióbio (28.25.90): NCM genérica de óxidos de outros metais"
+     ]
+    },
+    "Estanho": {
+     "classe": "III",
+     "criterio": "Minério e concentrado, estanho em formas brutas e resíduos.",
+     "fora": [
+      "Obras de estanho (80.03 a 80.07)"
+     ]
+    },
+    "Ferro": {
+     "classe": "III",
+     "criterio": "Minério de ferro, aglomerados (pelotas), piritas ustuladas, ferro fundido bruto e ferro esponja.",
+     "fora": [
+      "Aço e produtos siderúrgicos (a partir da posição 72.06)",
+      "Ferroligas, que foram listadas em cada elemento (manganês, cromo, silício etc.)"
+     ]
+    },
+    "Zinco": {
+     "classe": "III",
+     "criterio": "Minério e concentrado, zinco em formas brutas, pós, poeiras e resíduos, e óxido de zinco.",
+     "fora": [
+      "Obras de zinco (79.04 a 79.07)",
+      "Aço galvanizado, que é classificado como aço"
+     ]
+    },
+    "Ouro": {
+     "classe": "III",
+     "criterio": "Minérios de metais preciosos (26.16.90, NCM compartilhada), ouro em formas brutas e semimanufaturadas (para uso não monetário e monetário) e resíduos e cinzas de ouro.",
+     "fora": [
+      "Joias e artefatos de ouro (71.13)"
+     ]
+    },
+    "Magnésio": {
+     "classe": "III",
+     "criterio": "Magnesita, magnésia calcinada e eletrofundida, magnésio metálico em formas brutas e resíduos, hidróxido e peróxido de magnésio.",
+     "fora": [
+      "Obras de magnésio (81.04.90)",
+      "Cloreto e sulfato de magnésio"
+     ]
+    },
+    "Molibdênio": {
+     "classe": "III",
+     "criterio": "Minério (molibdenita), metal em formas brutas e pós, ferro-molibdênio, óxidos e molibdatos.",
+     "fora": [
+      "Barras, chapas, fios e obras de molibdênio (81.02.92 a 81.02.99)"
+     ]
+    },
+    "Tório": {
+     "classe": "III",
+     "criterio": "Só o minério de tório (26.12.20). O tório metálico e seus compostos estão na NCM 28.44.30, atribuída ao urânio.",
+     "fora": [
+      "Tório e compostos (28.44.30): NCM compartilhada, atribuída ao urânio"
+     ]
+    },
+    "Alumínio": {
+     "classe": "III",
+     "criterio": "Bauxita, alumina e hidróxido de alumínio, alumínio em formas brutas (primário e ligas), pós e resíduos.",
+     "fora": [
+      "Laminados, extrudados, fios e obras de alumínio (76.04 a 76.16): semimanufaturados e manufaturas"
+     ]
+    },
+    "Grupo da platina": {
+     "classe": "III",
+     "criterio": "Platina, paládio, ródio, irídio, ósmio e rutênio em formas brutas, em pó ou semimanufaturadas, e resíduos e cinzas de platina.",
+     "fora": [
+      "Catalisadores com platina (71.15)",
+      "Joias"
+     ]
+    }
+   },
+   "ncms": [
+    {
+     "ncm": "25030010",
+     "descricao": "Enxofre de qualquer espécie, exceto o enxofre sublimado, o precipitado e o coloidal, a granel",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Enxofre",
+      "Enxofre"
+     ]
+    },
+    {
+     "ncm": "25030090",
+     "descricao": "Outras formas de enxofre de qualquer espécie, exceto o enxofre sublimado, o precipitado e o coloidal",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Enxofre",
+      "Enxofre"
+     ]
+    },
+    {
+     "ncm": "25041000",
+     "descricao": "Grafita natural em pó ou em escamas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Grafita",
+      "Grafita natural"
+     ]
+    },
+    {
+     "ncm": "25049000",
+     "descricao": "Grafinat natural, em outras formas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Grafita",
+      "Grafita natural"
+     ]
+    },
+    {
+     "ncm": "25061000",
+     "descricao": "Quartzo",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Quartzo e quartzito"
+     ]
+    },
+    {
+     "ncm": "25062000",
+     "descricao": "Quartzitos, mesmo desbastados ou simplesmente cortados a serra ou por outro meio, em blocos ou placas de forma quadrada ou retangular",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Quartzo e quartzito"
+     ]
+    },
+    {
+     "ncm": "25062100",
+     "descricao": "Quartzitos em bruto ou desbastados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Quartzo e quartzito"
+     ]
+    },
+    {
+     "ncm": "25062900",
+     "descricao": "Outras formas de quartzitos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Quartzo e quartzito"
+     ]
+    },
+    {
+     "ncm": "25101010",
+     "descricao": "Fosfatos de cálcio naturais, não moídos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Rocha fosfática"
+     ]
+    },
+    {
+     "ncm": "25101090",
+     "descricao": "Fosfatos aluminocálcicos, naturais, cré fosfatado, não moídos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Rocha fosfática"
+     ]
+    },
+    {
+     "ncm": "25102010",
+     "descricao": "Fosfatos de cálcio naturais, moídos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Rocha fosfática"
+     ]
+    },
+    {
+     "ncm": "25102090",
+     "descricao": "Fosfatos aluminocálcicos, naturais, cré fosfatado, moídos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Rocha fosfática"
+     ]
+    },
+    {
+     "ncm": "25191000",
+     "descricao": "Carbonato de magnésio natural (magnesita)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnesita e magnésia"
+     ]
+    },
+    {
+     "ncm": "25199010",
+     "descricao": "Magnésia eletrofundida",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnesita e magnésia"
+     ]
+    },
+    {
+     "ncm": "25199090",
+     "descricao": "Magnésia calcinada a fundo e outros óxidos de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnesita e magnésia"
+     ]
+    },
+    {
+     "ncm": "25309010",
+     "descricao": "Espodumênio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Lítio",
+      "Minério e concentrado (espodumênio)"
+     ]
+    },
+    {
+     "ncm": "25309030",
+     "descricao": "Minerais de metais das terras raras",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26011100",
+     "descricao": "Minérios de ferro e seus concentrados, exceto as piritas de ferro ustuladas (cinzas de piritas), não aglomerados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Minério de ferro e pelotas"
+     ]
+    },
+    {
+     "ncm": "26011200",
+     "descricao": "Minérios de ferro aglomerados e seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Minério de ferro e pelotas"
+     ]
+    },
+    {
+     "ncm": "26011210",
+     "descricao": "Minérios de ferro e seus concentrados, exceto as piritas de ferro ustuladas (cinzas de piritas), aglomerados por processo de peletização, de diâmetro superior ou igual a 8mm e inferior ou igual a 18mm",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Minério de ferro e pelotas"
+     ]
+    },
+    {
+     "ncm": "26011220",
+     "descricao": "Minérios de ferro e seus concentrados, exceto as piritas de ferro ustuladas (cinzas de piritas), em briquetes de volume igual ou superior a 4 cm³, mas não superior a 60 cm³",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Minério de ferro e pelotas"
+     ]
+    },
+    {
+     "ncm": "26011290",
+     "descricao": "Outros minérios de ferro aglomerados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Minério de ferro e pelotas"
+     ]
+    },
+    {
+     "ncm": "26012000",
+     "descricao": "Piritas de ferro ustuladas (cinzas de piritas)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Minério de ferro e pelotas"
+     ]
+    },
+    {
+     "ncm": "26020010",
+     "descricao": "Minérios de manganês e seus concentrados, incluindo os minérios de manganês ferruginosos e seus concentrados, de teor em manganês de 20 % ou mais, em peso, sobre o produto seco, aglomerados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26020090",
+     "descricao": "Outros minérios de manganês e seus concentrados, incluindo os minérios de manganês ferruginosos e seus concentrados, de teor em manganês de 20 % ou mais, em peso, sobre o produto seco",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26030010",
+     "descricao": "Sulfetos de minérios de cobre e seus concentrados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26030090",
+     "descricao": "Outros minérios de cobre e seus concentrados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26040000",
+     "descricao": "Minérios de níquel e seus concentrados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26050000",
+     "descricao": "Minérios de cobalto e seus concentrados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26060011",
+     "descricao": "Bauxita não calcinada (minério de alumínio)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Bauxita (minério)"
+     ]
+    },
+    {
+     "ncm": "26060012",
+     "descricao": "Bauxita calcinada (minério de alumínio)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Bauxita (minério)"
+     ]
+    },
+    {
+     "ncm": "26060090",
+     "descricao": "Outros minérios de alumínio e seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Bauxita (minério)"
+     ]
+    },
+    {
+     "ncm": "26080010",
+     "descricao": "Sulfetos de minérios de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26080090",
+     "descricao": "Outros minérios de zinco e seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26090000",
+     "descricao": "Minérios de estanho e seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Estanho",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26100010",
+     "descricao": "Cromita (minérios de cromo)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26100090",
+     "descricao": "Outros minérios de cromo e seus concentrados",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26110000",
+     "descricao": "Minérios de tungstênio (volfrâmio) e seus concentrados",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26121000",
+     "descricao": "Minérios de urânio e seus concentrados",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Urânio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26122000",
+     "descricao": "Minérios de tório e seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Tório",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26131010",
+     "descricao": "Molibdenita ustulada (minérios de molibdênio)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26131090",
+     "descricao": "Outros minérios de molibdênio, ustulados, seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26139010",
+     "descricao": "Molibdenita não ustulada (minérios de molibdênio)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26139090",
+     "descricao": "Outros minérios de molibdênio não ustulados e concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26140010",
+     "descricao": "Ilmenita (minérios de titânio)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26140090",
+     "descricao": "Outros minérios de titânio e seus concentrados",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Minério e concentrado"
+     ]
+    },
+    {
+     "ncm": "26159000",
+     "descricao": "Minérios de nióbio, tântalo ou vanádio, seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Nióbio",
+      "Minério e concentrado (inclui tântalo e vanádio)"
+     ]
+    },
+    {
+     "ncm": "26169000",
+     "descricao": "Minérios de outros metais preciosos e seus concentrados",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Minérios de metais preciosos"
+     ]
+    },
+    {
+     "ncm": "28020000",
+     "descricao": "Enxofre sublimado ou precipitado; enxofre coloidal",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Enxofre",
+      "Enxofre"
+     ]
+    },
+    {
+     "ncm": "28046100",
+     "descricao": "Silício, que contenham, em peso, pelo menos 99,99 % de silício",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Silício metálico"
+     ]
+    },
+    {
+     "ncm": "28046900",
+     "descricao": "Outros silícios",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Silício metálico"
+     ]
+    },
+    {
+     "ncm": "28053010",
+     "descricao": "Liga de cério, com teor de ferro inferior ou igual a 5 %, em peso (Mischmetal)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Metais e ligas"
+     ]
+    },
+    {
+     "ncm": "28053090",
+     "descricao": "Outros metais de terras raras, escândio e ítrio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Metais e ligas"
+     ]
+    },
+    {
+     "ncm": "28070010",
+     "descricao": "Ácido sulfúrico",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Enxofre",
+      "Ácido sulfúrico"
+     ]
+    },
+    {
+     "ncm": "28070020",
+     "descricao": "Ácido sulfúrico fumante (óleum)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Enxofre",
+      "Ácido sulfúrico"
+     ]
+    },
+    {
+     "ncm": "28091000",
+     "descricao": "Pentóxido de difósforo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Ácido fosfórico"
+     ]
+    },
+    {
+     "ncm": "28092011",
+     "descricao": "Ácido fosfórico com teor de ferro inferior a 750 ppm",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Ácido fosfórico"
+     ]
+    },
+    {
+     "ncm": "28092019",
+     "descricao": "Outros ácidos fosfóricos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Ácido fosfórico"
+     ]
+    },
+    {
+     "ncm": "28092020",
+     "descricao": "Ácido metafosfórico",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Ácido fosfórico"
+     ]
+    },
+    {
+     "ncm": "28092030",
+     "descricao": "Ácido pirofosfórico",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Ácido fosfórico"
+     ]
+    },
+    {
+     "ncm": "28092090",
+     "descricao": "Outros ácidos polifosfóricos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Ácido fosfórico"
+     ]
+    },
+    {
+     "ncm": "28161010",
+     "descricao": "Hidróxido de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Hidróxido e peróxido de magnésio"
+     ]
+    },
+    {
+     "ncm": "28161020",
+     "descricao": "Peróxido de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Hidróxido e peróxido de magnésio"
+     ]
+    },
+    {
+     "ncm": "28170010",
+     "descricao": "Óxido de zinco (branco de zinco)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28170020",
+     "descricao": "Peróxido de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28182010",
+     "descricao": "Alumina calcinada",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumina e hidróxido de alumínio"
+     ]
+    },
+    {
+     "ncm": "28182090",
+     "descricao": "Outros óxidos de alumínio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumina e hidróxido de alumínio"
+     ]
+    },
+    {
+     "ncm": "28183000",
+     "descricao": "Hidróxido de alumínio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumina e hidróxido de alumínio"
+     ]
+    },
+    {
+     "ncm": "28191000",
+     "descricao": "Trióxido de cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28199010",
+     "descricao": "Óxidos de cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28199020",
+     "descricao": "Hidróxidos de cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28201000",
+     "descricao": "Dióxido de manganês",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28201010",
+     "descricao": "Dióxido de manganês com um teor de MnO 2 igual ou superior a 91 %, em peso (manganês eletrolítico)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28201090",
+     "descricao": "Outros dióxidos de manganês",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28209010",
+     "descricao": "Óxido manganoso",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28209020",
+     "descricao": "Trióxido de dimanganês (sesquióxido de manganês)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28209030",
+     "descricao": "Tetraóxido de trimanganês (óxido salino de manganês)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28209040",
+     "descricao": "Heptaóxido de dimanganês (anidrido permangânico)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28220010",
+     "descricao": "Tetraóxido de tricobalto (óxido salino de cobalto)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28220090",
+     "descricao": "Outros óxidos e hidróxidos de cobalto, inclusive os comerciais",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28230010",
+     "descricao": "Óxidos de titânio, tipo anatase",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "28230020",
+     "descricao": "Óxidos de titânio, tipo rutilo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "28230090",
+     "descricao": "Outros óxidos de titânio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "28252010",
+     "descricao": "Óxido de litio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Lítio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28252020",
+     "descricao": "Hidróxido de litio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Lítio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28253010",
+     "descricao": "Pentóxido de divanádio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Vanádio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28253090",
+     "descricao": "Outros óxidos e hidróxidos de vanádio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Vanádio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28254010",
+     "descricao": "Óxido niqueloso",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28254090",
+     "descricao": "Outros óxidos e hidróxidos de níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28255010",
+     "descricao": "Óxido cúprico, com teor de CuO superior ou igual a 98 %, em peso",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28255090",
+     "descricao": "Outros óxidos e hidróxidos de cobre",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28257010",
+     "descricao": "Trióxido de molibdênio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28257090",
+     "descricao": "Outros óxidos e hidróxidos de molibdênio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28259020",
+     "descricao": "Trióxido de tungstênio (volframio)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Ferro-tungstênio e compostos"
+     ]
+    },
+    {
+     "ncm": "28273400",
+     "descricao": "Cloreto de cobalto",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28273500",
+     "descricao": "Cloreto de níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28273920",
+     "descricao": "Cloreto de titânio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "28273960",
+     "descricao": "Cloreto de lítio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Lítio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28273993",
+     "descricao": "Cloreto de cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28273995",
+     "descricao": "Cloreto de manganês",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28273997",
+     "descricao": "Cloreto de cobalto",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28332300",
+     "descricao": "Sulfato de cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28332400",
+     "descricao": "Sulfato de níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28332510",
+     "descricao": "Sulfato cuproso",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28332520",
+     "descricao": "Sulfato cúprico",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28332960",
+     "descricao": "Sulfatos de cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28342110",
+     "descricao": "Nitrato de potássio, com teor de KNO3 inferior ou igual a 98 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Nitrato de potássio"
+     ]
+    },
+    {
+     "ncm": "28342190",
+     "descricao": "Outros nitratos de potássio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Nitrato de potássio"
+     ]
+    },
+    {
+     "ncm": "28369100",
+     "descricao": "Carbonatos de litio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Lítio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415011",
+     "descricao": "Cromato de amônio; dicromato de amônio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415012",
+     "descricao": "Cromato de potássio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415013",
+     "descricao": "Cromato de sódio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415014",
+     "descricao": "Dicromato de potássio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415015",
+     "descricao": "Cromato de zinco",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415016",
+     "descricao": "Cromato de chumbo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415019",
+     "descricao": "Outros cromatos e dicromatos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28415020",
+     "descricao": "Peroxocromatos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28416100",
+     "descricao": "Permanganato de potássio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28416910",
+     "descricao": "Manganitos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28416920",
+     "descricao": "Manganatos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28416930",
+     "descricao": "Outros permanganatos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28417010",
+     "descricao": "Molibdato de amônio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28417020",
+     "descricao": "Molibdato de sódio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28417090",
+     "descricao": "Outros molibdatos",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28418010",
+     "descricao": "Tungstato (volframato) de amônio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Ferro-tungstênio e compostos"
+     ]
+    },
+    {
+     "ncm": "28418020",
+     "descricao": "Tungstato (volframato) de chumbo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Ferro-tungstênio e compostos"
+     ]
+    },
+    {
+     "ncm": "28418090",
+     "descricao": "Outros tungstatos (volframatos)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Ferro-tungstênio e compostos"
+     ]
+    },
+    {
+     "ncm": "28419030",
+     "descricao": "Vanadatos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Vanádio",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28441000",
+     "descricao": "Urânio natural e seus compostos; ligas, dispersões (incluindo os ceramais (cermets)), produtos cerâmicos e misturas que contenham urânio natural ou compostos de urânio natural",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Urânio",
+      "Urânio e compostos (inclui empobrecido e tório)"
+     ]
+    },
+    {
+     "ncm": "28442000",
+     "descricao": "Urânio enriquecido em U235 e seus compostos; plutônio e seus compostos; ligas, dispersões (incluindo os ceramais (cermets)), produtos cerâmicos e misturas que contenham urânio enriquecido em U235, plutônio ou compostos destes produtos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Urânio",
+      "Urânio e compostos (inclui empobrecido e tório)"
+     ]
+    },
+    {
+     "ncm": "28443000",
+     "descricao": "Urânio empobrecido em U235 e seus compostos; tório e seus compostos; ligas, dispersões (incluindo os ceramais (cermets)), produtos cerâmicos e misturas que contenham urânio empobrecido em U235, tório ou compostos destes produtos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Urânio",
+      "Urânio e compostos (inclui empobrecido e tório)"
+     ]
+    },
+    {
+     "ncm": "28445000",
+     "descricao": "Elementos combustíveis, usados, de reatores nucleares",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Urânio",
+      "Urânio e compostos (inclui empobrecido e tório)"
+     ]
+    },
+    {
+     "ncm": "28461010",
+     "descricao": "Óxido cérico",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28461090",
+     "descricao": "Outros compostos de cério",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28469010",
+     "descricao": "Óxido de praseodímio",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28469020",
+     "descricao": "Cloretos dos demais metais das terras raras",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28469030",
+     "descricao": "Gadopentetato de dimeglumina",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28469090",
+     "descricao": "Outros compostos dos metais das terras raras, de ítrio, etc",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28492000",
+     "descricao": "Carbonetos de constituição química definida ou não, de silício",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28499020",
+     "descricao": "Carbonetos de constituição química definida ou não, de tântalo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tântalo",
+      "Compostos"
+     ]
+    },
+    {
+     "ncm": "28499030",
+     "descricao": "Carbonetos de constituição química definida ou não, de tungstênio (volfrâmio)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Ferro-tungstênio e compostos"
+     ]
+    },
+    {
+     "ncm": "31031010",
+     "descricao": "Superfosfatos, com teor de pentóxido de fósforo (P2O5) não superior a 22 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31031020",
+     "descricao": "Superfosfatos, com teor de pentóxido de fósforo (P2O5) superior a 22 % mas não superior a 45 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31031030",
+     "descricao": "Superfosfatos, com teor de pentóxido de fósforo (P2O5) superior a 45 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31031100",
+     "descricao": "Superfosfatos, que contenham, em peso, 35 % ou mais de pentóxido de difósforo (P2O5)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31031900",
+     "descricao": "Outros superfosfatos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31032000",
+     "descricao": "Escórias de desfosforação",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31039011",
+     "descricao": "Hidrogeno-ortofosfato de cálcio, com teor de pentóxido de fósforo (P2O5) não superior a 46 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31039019",
+     "descricao": "Outros hidrogenos-ortofosfatos de cálcio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31039090",
+     "descricao": "Outros adubos ou fertilizantes minerais/químicos, fosfatados",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31041000",
+     "descricao": "Carnalita e outros sais de potássio, naturais, em bruto",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31042010",
+     "descricao": "Cloreto de potássio, com teor de óxido de potássio (K2O) não superior a 60 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31042090",
+     "descricao": "Outros cloretos de potássio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31043010",
+     "descricao": "Sulfato de potássio, com teor de óxido de potássio (K2O) não superior a 52 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31043090",
+     "descricao": "Outros sulfatos de potássio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31049010",
+     "descricao": "Sulfato duplo de potássio e magnésio, com teor de óxido de potássio (K2O) superior a 30 %, em peso",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31049090",
+     "descricao": "Outros adubos ou fertilizantes minerais/químicos, potássicos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Potássio",
+      "Sais e adubos potássicos (cloreto, sulfato)"
+     ]
+    },
+    {
+     "ncm": "31053000",
+     "descricao": "Hidrogeno-ortofosfato de diamônio (fosfato diamônico ou diamoniacal)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31053010",
+     "descricao": "Hidrogeno-ortofosfato de diamônio (fosfato diamônico ou diamoniacal), com teor de arsênio superior ou igual a 6 mg/kg",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31053090",
+     "descricao": "Outros hidrogeno-ortofosfato de diamônio (fosfato diamônico ou diamoniacal)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "31054000",
+     "descricao": "Diidrogeno-ortofosfato de amônio (fosfato monoamônico ou monoamoniacal), mesmo misturado com hidrogeno-ortofosfato de diamônio (fosfato diamônico ou diamoniacal)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Fosfato",
+      "Adubos fosfatados (superfosfatos, MAP, DAP)"
+     ]
+    },
+    {
+     "ncm": "32061110",
+     "descricao": "Pigmentos tipo rutilo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061111",
+     "descricao": "Pigmentos tipo rutilo, com tamanho médio de partícula superior ou igual a 0,6 micrômetros (mícrons), com adição de modificadores, com adição de modificadores",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061119",
+     "descricao": "Outros pigmentos tipo rutilo, que contenham, em peso, 80 % ou mais de dióxido de titânio, calculado sobre matéria seca",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061120",
+     "descricao": "Outros pigmentos que contenham, em peso, 80 % ou mais de dióxido de titânio, calculado sobre matéria seca",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061121",
+     "descricao": "Pigmento anatase, contendo dióxido de titânio >= 80% seco",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061129",
+     "descricao": "Outros pigmentos contendo dióxido de titânio >= 80% seco",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061130",
+     "descricao": "Preparações à base de dióxido de titânio, peso >= 80%",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061910",
+     "descricao": "Pigmento constituído por mica revestida película dióxido titânio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "32061990",
+     "descricao": "Outros pigmentos e prepars.à base de dióxido de titânio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Óxidos e pigmentos de dióxido de titânio"
+     ]
+    },
+    {
+     "ncm": "36069000",
+     "descricao": "Ferrocerio e outras ligas pirofosfóricas, artigo de material inflamável",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Terras raras",
+      "Metais e ligas"
+     ]
+    },
+    {
+     "ncm": "38011000",
+     "descricao": "Grafita artificial",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Grafita",
+      "Grafita artificial e coloidal"
+     ]
+    },
+    {
+     "ncm": "38012010",
+     "descricao": "Suspensão semicoloidal em óleos minerais",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Grafita",
+      "Grafita artificial e coloidal"
+     ]
+    },
+    {
+     "ncm": "38012090",
+     "descricao": "Outras grafitas coloidais ou semicoloidais",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Grafita",
+      "Grafita artificial e coloidal"
+     ]
+    },
+    {
+     "ncm": "71081100",
+     "descricao": "Pós de ouro (incluindo o ouro platinado), para usos não monetários",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081200",
+     "descricao": "Ouro em outras formas brutas, para uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081210",
+     "descricao": "Bulhão dourado (bullion doré), em formas brutas, para uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081290",
+     "descricao": "Ouro em outras formas brutas, para uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081310",
+     "descricao": "Ouro em barras, fios e perfis de seção maciça",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081311",
+     "descricao": "Ouro em barras, fios, etc, de bulhão dourado, para uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081319",
+     "descricao": "Outras barras, fios, etc, de ouro, para uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081390",
+     "descricao": "Ouro em outras formas semimanufaturadas, bulhão dourado, uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081391",
+     "descricao": "Ouro em outras formas semimanufaturadas, bulhão dourado, uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71081399",
+     "descricao": "Ouro em outra forma semimanufaturada, para uso não monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71082000",
+     "descricao": "Ouro (incluindo o ouro platinado), em formas brutas ou semimanufaturadas, para uso monetário",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Ouro em formas brutas e semimanufaturadas"
+     ]
+    },
+    {
+     "ncm": "71101100",
+     "descricao": "Platina, em formas brutas ou em pó",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71101910",
+     "descricao": "Platina, em barras, fios e perfis de seção maciça",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71101990",
+     "descricao": "Platina, em outras formas semimanufaturadas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71102100",
+     "descricao": "Paládio em formas brutas ou em pó",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71102900",
+     "descricao": "Paladio em formas semimanufaturadas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71103100",
+     "descricao": "Ródio em formas brutas ou em pó",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71103900",
+     "descricao": "Ródio em formas semimanufaturadas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71104100",
+     "descricao": "Irídio, ósmio e rutênio, em formas brutas ou em pó",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71104900",
+     "descricao": "Irídio, ósmio e rutênio, em formas semimanufaturadas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Platina, paládio, ródio, irídio, ósmio e rutênio"
+     ]
+    },
+    {
+     "ncm": "71121000",
+     "descricao": "Desperdícios/resíduos de ouro e metais folheados/chapeados de ouro",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Resíduos e cinzas de ouro"
+     ]
+    },
+    {
+     "ncm": "71122000",
+     "descricao": "Desperdícios/resíduos de platina/metais folheados/chapd. de platina",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Resíduos e cinzas de platina"
+     ]
+    },
+    {
+     "ncm": "71123010",
+     "descricao": "Cinzas que contenham ouro, mas que não contenham outros metais preciosos",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Resíduos e cinzas de ouro"
+     ]
+    },
+    {
+     "ncm": "71123020",
+     "descricao": "Cinzas que contenham platina, mas que não contenham outros metais preciosos",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Resíduos e cinzas de platina"
+     ]
+    },
+    {
+     "ncm": "71129100",
+     "descricao": "Outros resíduos/desperdícios de ouro, de metais folheados ou chapeados (plaquê) de ouro, exceto varreduras que contenham outros metais preciosos",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ouro",
+      "Resíduos e cinzas de ouro"
+     ]
+    },
+    {
+     "ncm": "71129200",
+     "descricao": "Outros resíduos/desperdícios de platina, de metais folheados ou chapeados (plaquê) de platina, exceto varreduras que contenham outros metais preciosos",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Grupo da platina",
+      "Resíduos e cinzas de platina"
+     ]
+    },
+    {
+     "ncm": "72011000",
+     "descricao": "Ferro fundido bruto não ligado, que contenha, em peso, 0,5 % ou menos de fósforo",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Ferro-gusa e ferro esponja"
+     ]
+    },
+    {
+     "ncm": "72012000",
+     "descricao": "Ferro fundido bruto não ligado, que contenha, em peso, mais de 0,5 % de fósforo",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Ferro-gusa e ferro esponja"
+     ]
+    },
+    {
+     "ncm": "72015000",
+     "descricao": "Ligas de ferro fundido bruto; ferro spiegel (especular)",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Ferro-gusa e ferro esponja"
+     ]
+    },
+    {
+     "ncm": "72021100",
+     "descricao": "Ferro-manganês, que contenham, em peso, mais de 2 % de carbono",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Ferro-manganês e silício-manganês"
+     ]
+    },
+    {
+     "ncm": "72021900",
+     "descricao": "Outras ligas de ferro-manganês",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Ferro-manganês e silício-manganês"
+     ]
+    },
+    {
+     "ncm": "72022100",
+     "descricao": "Ferro-silício, que contenham, em peso, mais de 55 % de silício",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Ferro-silício"
+     ]
+    },
+    {
+     "ncm": "72022900",
+     "descricao": "Outras ligas de ferro-silício",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Silício",
+      "Ferro-silício"
+     ]
+    },
+    {
+     "ncm": "72023000",
+     "descricao": "Ferro-silício-manganês",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Ferro-manganês e silício-manganês"
+     ]
+    },
+    {
+     "ncm": "72024100",
+     "descricao": "Ferro-cromo, que contenham, em peso, mais de 4 % de carbono",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Ferro-cromo"
+     ]
+    },
+    {
+     "ncm": "72024900",
+     "descricao": "Outras ligas de ferro-cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Ferro-cromo"
+     ]
+    },
+    {
+     "ncm": "72025000",
+     "descricao": "Ferro-silício-cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Ferro-cromo"
+     ]
+    },
+    {
+     "ncm": "72026000",
+     "descricao": "Ferro-níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Ferro-níquel"
+     ]
+    },
+    {
+     "ncm": "72027000",
+     "descricao": "Ferro-molibdênio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Metal e ferro-molibdênio"
+     ]
+    },
+    {
+     "ncm": "72028000",
+     "descricao": "Ferro-tungstênio (ferro-volfrâmio) e ferro-silício-tungstênio (ferro-silício-volfrâmio)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Ferro-tungstênio e compostos"
+     ]
+    },
+    {
+     "ncm": "72029100",
+     "descricao": "Ferro-titânio e ferro-silício-titânio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Metal e ferro-titânio"
+     ]
+    },
+    {
+     "ncm": "72029200",
+     "descricao": "Ferro-vanádio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Vanádio",
+      "Metal e ferro-vanádio"
+     ]
+    },
+    {
+     "ncm": "72029300",
+     "descricao": "Ferro-nióbio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Nióbio",
+      "Ferro-nióbio"
+     ]
+    },
+    {
+     "ncm": "72031000",
+     "descricao": "Produtos ferrosos obtidos por redução direta dos minérios de ferro",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Ferro-gusa e ferro esponja"
+     ]
+    },
+    {
+     "ncm": "72039000",
+     "descricao": "Outros produtos ferrosos esponjosos, em pedaços, esferas, etc",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Ferro",
+      "Ferro-gusa e ferro esponja"
+     ]
+    },
+    {
+     "ncm": "74010000",
+     "descricao": "Mates de cobre; cobre de cementação (precipitado de cobre)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74011000",
+     "descricao": "Mates de cobre",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74012000",
+     "descricao": "Cobre de cementação (precipitado de cobre)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74020000",
+     "descricao": "Cobre não refinado; ânodos de cobre para refinação eletrolítica",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74031100",
+     "descricao": "Cátodos e seus elementos de cobre refinado, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74031200",
+     "descricao": "Barras para obtenção de fios (wire-bars), de cobre refinado, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74031300",
+     "descricao": "Palanquilhas (billets) de cobre refinado, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74031900",
+     "descricao": "Outros produtos de cobre refinado, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74032100",
+     "descricao": "Ligas de cobre à base de cobre-zinco (latão), em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74032200",
+     "descricao": "Ligas de cobre à base de cobre-estanho (bronze), em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74032300",
+     "descricao": "Ligas de cobre-niquel/cobre-niquel-zinco, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74032900",
+     "descricao": "Outras ligas de cobre (exceto ligas-mãe da posição 74.05), em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Mates, ânodos e cobre refinado"
+     ]
+    },
+    {
+     "ncm": "74040000",
+     "descricao": "Desperdícios e resíduos, de cobre",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "74050000",
+     "descricao": "Ligas-mães de cobre",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "74061000",
+     "descricao": "Pós de cobre, de estrutura não lamelar",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "74061010",
+     "descricao": "Pós de cobre, de estrutura não lamelar, com um teor, em peso, de chumbo igual ou superior a 9,5 %, mas inferior ou igual a 25,0 % e de estanho igual ou superior a 1,75 %, mas inferior ou igual a 11,0 %, sem outros elementos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "74061020",
+     "descricao": "Pós de cobre, de estrutura não lamelar, com um teor, em peso, de estanho igual ou superior a 7,0 %, mas inferior ou igual a 9,0 % e de níquel igual ou superior a 0,7 %, mas inferior ou igual a 1,3 %, sem outros elementos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "74061090",
+     "descricao": "Outros pós e escamas de cobre, de estrutura não lamelar",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "74062000",
+     "descricao": "Pós de estrutura lamelar; escamas; de cobre",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobre",
+      "Ligas-mãe, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "75011000",
+     "descricao": "Mates de níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75012000",
+     "descricao": "Sinters de óxidos de níquel e outros produtos intermediários da metalurgia do níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75021010",
+     "descricao": "Catodos de niquel não ligado, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75021090",
+     "descricao": "Outro niquel não ligado, em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75022000",
+     "descricao": "Ligas de níquel, em forma bruta",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75030000",
+     "descricao": "Desperdícios e resíduos, de níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75040010",
+     "descricao": "Pós e escamas, de níquel não ligado",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "75040090",
+     "descricao": "Outros pós e escamas, de níquel",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Níquel",
+      "Mates, níquel e ligas em formas brutas"
+     ]
+    },
+    {
+     "ncm": "76011000",
+     "descricao": "Alumínio não ligado, em formas brutas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumínio em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "76012000",
+     "descricao": "Ligas de alumínio, em formas brutas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumínio em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "76020000",
+     "descricao": "Desperdícios e resíduos, de alumínio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumínio em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "76031000",
+     "descricao": "Pós de alumínio, de estrutura não lamelar",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumínio em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "76032000",
+     "descricao": "Pós de estrutura lamelar; escamas, de alumínio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Alumínio",
+      "Alumínio em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79011111",
+     "descricao": "Zinco não ligado, que contenha, em peso, 99,99 % ou mais de zinco, eletrolítico, em lingotes",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79011119",
+     "descricao": "Outras zincos não ligados, que contenha, em peso, 99,99 % ou mais de zinco, eletrolítico",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79011191",
+     "descricao": "Outros lingotes de zinco não ligados, que contenham, em peso, 99,99 % ou mais de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79011199",
+     "descricao": "Outras formas brutas de zinco não ligado, que contenha, em peso, 99,99 % ou mais de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79011210",
+     "descricao": "Zinco não ligado, que contenha, em peso, menos de 99,99 % de zinco, em lingotes",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79011290",
+     "descricao": "Zinco não ligado, que contenha, em peso, menos de 99,99 % de zinco, em outras formas",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79012010",
+     "descricao": "Ligas de zinco, em lingotes",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79012090",
+     "descricao": "Outras ligas de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79020000",
+     "descricao": "Desperdícios e resíduos, de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79031000",
+     "descricao": "Poeiras de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "79039000",
+     "descricao": "Pós e escamas, de zinco",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Zinco",
+      "Zinco em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "80011000",
+     "descricao": "Estanho não ligado, em forma bruta",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Estanho",
+      "Estanho em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "80012000",
+     "descricao": "Ligas de estanho, em forma bruta",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Estanho",
+      "Estanho em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "80020000",
+     "descricao": "Desperdícios e resíduos, de estanho",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Estanho",
+      "Estanho em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81011000",
+     "descricao": "Pós de tungstênio (volframio)",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Metal em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "81019100",
+     "descricao": "Tungstênio em forma bruta, inclusive barra sinterização, desperdício, etc",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Metal em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "81019400",
+     "descricao": "Tungstênio (volfrâmio) em formas brutas, incluindo as barras simplesmente obtidas por sinterização",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Metal em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "81019700",
+     "descricao": "Desperdícios e resíduos de tungstênio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tungstênio",
+      "Metal em formas brutas, pós e resíduos"
+     ]
+    },
+    {
+     "ncm": "81021000",
+     "descricao": "Pós de molibdênio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Metal e ferro-molibdênio"
+     ]
+    },
+    {
+     "ncm": "81029100",
+     "descricao": "Molibdênio em forma bruta, inclusive barra de sinterização, desperdícios, etc",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Metal e ferro-molibdênio"
+     ]
+    },
+    {
+     "ncm": "81029400",
+     "descricao": "Molibdênio em formas brutas, incluindo as barras simplesmente obtidas por sinterização",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Metal e ferro-molibdênio"
+     ]
+    },
+    {
+     "ncm": "81029700",
+     "descricao": "Desperdícios e resíduos de molibdênio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Molibdênio",
+      "Metal e ferro-molibdênio"
+     ]
+    },
+    {
+     "ncm": "81031000",
+     "descricao": "Tântalo em forma bruta, inclusive barra da sinterização, desperdícios, resíduos",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tântalo",
+      "Metal em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81032000",
+     "descricao": "Tântalo em formas brutas, incluindo as barras simplesmente obtidas por sinterização; pós",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tântalo",
+      "Metal em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81033000",
+     "descricao": "Desperdícios e resíduos de tântalo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Tântalo",
+      "Metal em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81041100",
+     "descricao": "Magnésio em formas brutas, que contenha pelo menos 99,8 %, em peso, de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnésio metálico em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81041900",
+     "descricao": "Outras formas brutas de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnésio metálico em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81042000",
+     "descricao": "Desperdícios e resíduos, de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnésio metálico em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81043000",
+     "descricao": "Aparas, resíduos de torno e grânulos, calibrados; pós, de magnésio",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Magnésio",
+      "Magnésio metálico em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81051010",
+     "descricao": "Pós de cobalto",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81051020",
+     "descricao": "Cobalto em bruto",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81051090",
+     "descricao": "Mates de cobalto, outros produtos intermediários de metal, cobalto, etc",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81052010",
+     "descricao": "Cobalto em formas brutas",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81052020",
+     "descricao": "Cobalto em pós",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81052021",
+     "descricao": "Pós de ligas à base de cobalto-cromo-tungstênio (volfrâmio) (estelites)",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81052029",
+     "descricao": "Outros pós",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81052090",
+     "descricao": "Mates de cobalto e outros produtos intermediários metálicos",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81053000",
+     "descricao": "Desperdícios e resíduos da metalurgia do cobalto",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Cobalto",
+      "Mates, cobalto em formas brutas e resíduos"
+     ]
+    },
+    {
+     "ncm": "81081000",
+     "descricao": "Titânio em forma bruta, desperdícios, resíduos e pó de titânios",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Metal e ferro-titânio"
+     ]
+    },
+    {
+     "ncm": "81082000",
+     "descricao": "Titânio em formas brutas, e titânio em pós",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Metal e ferro-titânio"
+     ]
+    },
+    {
+     "ncm": "81083000",
+     "descricao": "Desperdícios e resíduos do titânio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Titânio",
+      "Metal e ferro-titânio"
+     ]
+    },
+    {
+     "ncm": "81110010",
+     "descricao": "Manganês em bruto",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Manganês metálico"
+     ]
+    },
+    {
+     "ncm": "81110090",
+     "descricao": "Outras obras de manganês, desperdícios e resíduos de manganês",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Manganês",
+      "Manganês metálico"
+     ]
+    },
+    {
+     "ncm": "81122010",
+     "descricao": "Cromo em bruto",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Cromo metálico"
+     ]
+    },
+    {
+     "ncm": "81122110",
+     "descricao": "Cromo em formas brutas",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Cromo metálico"
+     ]
+    },
+    {
+     "ncm": "81122120",
+     "descricao": "Cromo em pós",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Cromo metálico"
+     ]
+    },
+    {
+     "ncm": "81122200",
+     "descricao": "Desperdícios e resíduos do cromo",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Cromo",
+      "Cromo metálico"
+     ]
+    },
+    {
+     "ncm": "81124000",
+     "descricao": "Vanádio e suas obras, desperdícios e resíduos, de vanádio",
+     "categoria": "Classe II — Prioridade intermediária",
+     "subcategorias": [
+      "Vanádio",
+      "Metal e ferro-vanádio"
+     ]
+    },
+    {
+     "ncm": "81129100",
+     "descricao": "Gálio, háfnio, índio, nióbio, etc, em bruto, desperdícios, resíduos, pó",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Nióbio",
+      "Nióbio metálico (posição compartilhada com gálio, índio etc.)"
+     ]
+    },
+    {
+     "ncm": "81129200",
+     "descricao": "Gálio, nióbio, etc, em formas brutas; desperdícios e resíduos; pós",
+     "categoria": "Classe III — Prioridade baixa",
+     "subcategorias": [
+      "Nióbio",
+      "Nióbio metálico (posição compartilhada com gálio, índio etc.)"
+     ]
+    },
+    {
+     "ncm": "84013000",
+     "descricao": "Elementos combustíveis (cartuchos) não irradiados, para reatores nucleares",
+     "categoria": "Classe I — Prioridade alta",
+     "subcategorias": [
+      "Urânio",
+      "Elementos combustíveis nucleares"
+     ]
+    }
+   ]
+  }
+ ]
+}

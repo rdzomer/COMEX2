@@ -1,0 +1,303 @@
+{
+  "id": "MINERAIS",
+  "rotulo": "Minerais críticos e estratégicos",
+  "tipo": "tematica",
+  "descricao": "27 minerais da lista do Conselho Nacional de Política Mineral (CIMCE), em três classes de prioridade. Cada NCM entra uma única vez (no mineral principal), para que as somas por classe não tenham dupla contagem.",
+  "fontes": [
+    { "rotulo": "Secretaria-Geral da Presidência — Conselho aprova lista de 27 minerais críticos e estratégicos", "url": "https://www.gov.br/secretariageral/pt-br/noticias/2026/novembro/conselho-nacional-aprova-lista-de-27-minerais-criticos-e-estrategicos" },
+    { "rotulo": "Brasil de Fato — Governo define 27 minerais estratégicos", "url": "https://brasildefato.com.br/2026/11/05/governo-define-27-minerais-estrategicos-para-impulsionar-a-industrializacao-do-brasil/" }
+  ],
+  "metodologia": [
+    "Classes conforme a deliberação da 1ª reunião do CIMCE (cinco critérios: risco geopolítico, concentração da oferta global, substituibilidade, posição da indústria brasileira na cadeia e dependência externa).",
+    "As NCMs foram escolhidas por este projeto a partir da Nomenclatura Comum do Mercosul (tabela oficial do Comex Stat): minério e concentrado, metal e ligas em formas brutas, ferroligas e principais compostos. Manufaturas e semimanufaturados (fios, chapas, tubos, baterias, ímãs etc.) ficam de fora.",
+    "NCMs compartilhadas por mais de um mineral foram atribuídas a um só: ferro-silício-manganês (7202.30) a manganês; urânio empobrecido e tório (2844.30) a urânio; minérios de nióbio, tântalo e vanádio (2615.90) a nióbio; minérios de metais preciosos (2616.90) a ouro; ferro-silício-cromo (7202.50) a cromo.",
+    "Entram os adubos fosfatados simples (superfosfatos, MAP e DAP) e os potássicos (cloreto e sulfato de potássio). Os adubos mistos NPK, NP e PK (31.05.20, .51, .59 e .60) ficam de fora, porque misturam nutrientes e gerariam dupla contagem entre fosfato e potássio.",
+    "Os códigos antigos da NCM foram mantidos junto com os atuais, para que as séries históricas não tenham buracos.",
+    "Esta lista é uma proposta de trabalho e pode ser editada: altere este arquivo no GitHub e a tarefa de atualização refaz o dicionário e reconsulta a API."
+  ],
+  "classes": [
+    {
+      "id": "I",
+      "nome": "Classe I — Prioridade alta",
+      "minerais": [
+        {
+          "nome": "Cobre",
+          "criterio": "Minério e concentrado, mates, ânodos, cobre refinado (cátodos) e ligas em formas brutas, mais pós, resíduos e os óxidos e sulfatos de cobre.",
+          "fora": ["Fios, barras, chapas, tubos e demais obras de cobre (74.07 a 74.19): semimanufaturados e manufaturas"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2603"] },
+            { "etapa": "Mates, ânodos e cobre refinado", "ncms": ["7401", "7402", "7403"] },
+            { "etapa": "Ligas-mãe, pós e resíduos", "ncms": ["7404", "7405", "7406"] },
+            { "etapa": "Compostos", "ncms": ["28255", "283325"] }
+          ]
+        },
+        {
+          "nome": "Silício",
+          "criterio": "Quartzo e quartzito (matéria-prima do silício), silício metálico, ferro-silício e carboneto de silício.",
+          "fora": ["Areias silicosas (25.05): insumo de construção e vidro, sem relação com o silício metálico", "Sílica e silicones (28.11.22, 39.10): derivados químicos", "Células e módulos fotovoltaicos (85.41): manufatura"],
+          "grupos": [
+            { "etapa": "Quartzo e quartzito", "ncms": ["2506"] },
+            { "etapa": "Silício metálico", "ncms": ["28046"] },
+            { "etapa": "Ferro-silício", "ncms": ["72022"] },
+            { "etapa": "Compostos", "ncms": ["28492"] }
+          ]
+        },
+        {
+          "nome": "Níquel",
+          "criterio": "Minério, mates, níquel e ligas em formas brutas, ferro-níquel e os principais compostos (óxidos, sulfato e cloreto).",
+          "fora": ["Barras, chapas, fios e tubos de níquel (75.05 a 75.08)", "Baterias de níquel (85.07)", "Aço inoxidável, que é classificado como aço"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2604"] },
+            { "etapa": "Mates, níquel e ligas em formas brutas", "ncms": ["7501", "7502", "7503", "7504"] },
+            { "etapa": "Ferro-níquel", "ncms": ["72026"] },
+            { "etapa": "Compostos", "ncms": ["28254", "283324", "28273500"] }
+          ]
+        },
+        {
+          "nome": "Terras raras",
+          "criterio": "Minerais de terras raras (25.30.90.30), metais e ligas (mischmetal, ítrio, escândio), ferrocério e compostos (cério, óxidos e cloretos).",
+          "fora": ["Ímãs permanentes (85.05.11): produto manufaturado"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["25309030"] },
+            { "etapa": "Metais e ligas", "ncms": ["28053", "36069000"] },
+            { "etapa": "Compostos", "ncms": ["2846"] }
+          ]
+        },
+        {
+          "nome": "Cobalto",
+          "criterio": "Minério, mates e cobalto em formas brutas, pós e resíduos, além de óxidos, hidróxidos e cloretos de cobalto.",
+          "fora": ["Obras de cobalto (81.05.90)", "Baterias com cobalto (85.07.60)"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2605"] },
+            { "etapa": "Mates, cobalto em formas brutas e resíduos", "ncms": ["81051", "81052", "81053"] },
+            { "etapa": "Compostos", "ncms": ["2822", "28273400", "28273997"] }
+          ]
+        },
+        {
+          "nome": "Grafita",
+          "criterio": "Grafita natural e grafita artificial, incluindo a coloidal e a semicoloidal.",
+          "fora": ["Eletrodos de grafita para fornos (85.45.11 e 85.45.19): manufatura", "Pastas e preparações à base de grafita (38.01.30 e 38.01.90)"],
+          "grupos": [
+            { "etapa": "Grafita natural", "ncms": ["2504"] },
+            { "etapa": "Grafita artificial e coloidal", "ncms": ["380110", "380120"] }
+          ]
+        },
+        {
+          "nome": "Lítio",
+          "criterio": "Espodumênio (minério), óxido e hidróxido de lítio, carbonato de lítio e cloreto de lítio.",
+          "fora": ["Baterias e células de íon-lítio (85.07.60): manufatura", "Sulfato e nitrato de lítio (28.33.29.20 e 28.34.29.40): compostos secundários"],
+          "grupos": [
+            { "etapa": "Minério e concentrado (espodumênio)", "ncms": ["25309010"] },
+            { "etapa": "Compostos", "ncms": ["28252", "28369100", "28273960"] }
+          ]
+        },
+        {
+          "nome": "Manganês",
+          "criterio": "Minério e concentrado, manganês metálico, ferro-manganês, ferro-silício-manganês, óxidos, cloreto e permanganatos.",
+          "fora": ["Pilhas de dióxido de manganês (85.06.10): manufatura"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2602"] },
+            { "etapa": "Manganês metálico", "ncms": ["81110010", "81110090"] },
+            { "etapa": "Ferro-manganês e silício-manganês", "ncms": ["72021", "72023"] },
+            { "etapa": "Compostos", "ncms": ["2820", "28273995", "28416"] }
+          ]
+        },
+        {
+          "nome": "Urânio",
+          "criterio": "Minério de urânio, urânio natural, enriquecido e empobrecido (a NCM 28.44.30 inclui também o tório e seus compostos) e elementos combustíveis nucleares.",
+          "fora": ["Reatores e suas partes (84.01.10 e 84.01.40)", "Isótopos radioativos de uso médico (28.44.4x)"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["26121"] },
+            { "etapa": "Urânio e compostos (inclui empobrecido e tório)", "ncms": ["28441", "28442", "28443", "28445"] },
+            { "etapa": "Elementos combustíveis nucleares", "ncms": ["84013"] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "II",
+      "nome": "Classe II — Prioridade intermediária",
+      "minerais": [
+        {
+          "nome": "Tungstênio",
+          "criterio": "Minério, metal em formas brutas e pós, ferro-tungstênio, óxido, carbonetos e tungstatos.",
+          "fora": ["Barras, chapas, fios e obras de tungstênio (81.01.92 a 81.01.99)", "Ferramentas de metal duro (82.09)"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2611"] },
+            { "etapa": "Metal em formas brutas, pós e resíduos", "ncms": ["81011000", "81019100", "81019400", "81019700"] },
+            { "etapa": "Ferro-tungstênio e compostos", "ncms": ["72028", "28259020", "28499030", "28418"] }
+          ]
+        },
+        {
+          "nome": "Cromo",
+          "criterio": "Minério (cromita), cromo metálico em formas brutas, ferro-cromo e ferro-silício-cromo, óxidos, sulfatos, cloreto e cromatos.",
+          "fora": ["Obras de cromo (81.12.29)", "Pigmentos de cromo (32.06.20)", "Aço inoxidável, que é classificado como aço"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2610"] },
+            { "etapa": "Cromo metálico", "ncms": ["81122010", "81122110", "81122120", "81122200"] },
+            { "etapa": "Ferro-cromo", "ncms": ["72024", "72025"] },
+            { "etapa": "Compostos", "ncms": ["2819", "28332300", "28332960", "28273993", "28415"] }
+          ]
+        },
+        {
+          "nome": "Vanádio",
+          "criterio": "Ferro-vanádio, vanádio metálico, óxidos de vanádio e vanadatos. O minério vem junto com nióbio e tântalo na NCM 26.15.90, que fica na linha do nióbio.",
+          "fora": ["Minério de vanádio (26.15.90): NCM compartilhada, atribuída ao nióbio"],
+          "grupos": [
+            { "etapa": "Metal e ferro-vanádio", "ncms": ["72029200", "81124000"] },
+            { "etapa": "Compostos", "ncms": ["28253", "28419030"] }
+          ]
+        },
+        {
+          "nome": "Tântalo",
+          "criterio": "Tântalo em formas brutas, pós e resíduos, e carbonetos de tântalo. O minério está na NCM 26.15.90, na linha do nióbio.",
+          "fora": ["Minério de tântalo (26.15.90): NCM compartilhada, atribuída ao nióbio", "Obras de tântalo (81.03.90 e 81.03.99)"],
+          "grupos": [
+            { "etapa": "Metal em formas brutas e resíduos", "ncms": ["81031000", "81032000", "81033000"] },
+            { "etapa": "Compostos", "ncms": ["28499020"] }
+          ]
+        },
+        {
+          "nome": "Titânio",
+          "criterio": "Ilmenita e outros minérios, titânio em formas brutas, ferro-titânio, óxidos, pigmentos de dióxido de titânio e cloreto de titânio.",
+          "fora": ["Obras de titânio (81.08.90): manufatura", "Titanatos (28.41.90)"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2614"] },
+            { "etapa": "Metal e ferro-titânio", "ncms": ["81081000", "81082000", "81083000", "72029100"] },
+            { "etapa": "Óxidos e pigmentos de dióxido de titânio", "ncms": ["2823", "32061", "28273920"] }
+          ]
+        },
+        {
+          "nome": "Fosfato",
+          "criterio": "Rocha fosfática, ácido fosfórico e adubos fosfatados simples (superfosfatos, MAP e DAP).",
+          "fora": ["Adubos mistos NPK, NP e PK (31.05.20, .51, .59 e .60): contêm outros nutrientes e gerariam dupla contagem com o potássio", "Fosfatos industriais (28.35)"],
+          "grupos": [
+            { "etapa": "Rocha fosfática", "ncms": ["2510"] },
+            { "etapa": "Ácido fosfórico", "ncms": ["28091", "28092"] },
+            { "etapa": "Adubos fosfatados (superfosfatos, MAP, DAP)", "ncms": ["3103", "31053", "31054"] }
+          ]
+        },
+        {
+          "nome": "Potássio",
+          "criterio": "Cloreto e sulfato de potássio, outros sais potássicos naturais e nitrato de potássio.",
+          "fora": ["Adubos mistos NPK e PK (31.05)", "Hidróxido de potássio (28.15.20) e carbonato de potássio (28.36.40)"],
+          "grupos": [
+            { "etapa": "Sais e adubos potássicos (cloreto, sulfato)", "ncms": ["3104"] },
+            { "etapa": "Nitrato de potássio", "ncms": ["28342"] }
+          ],
+          "excluir": ["28342200", "28342910", "28342920", "28342930", "28342940", "28342990"]
+        },
+        {
+          "nome": "Enxofre",
+          "criterio": "Enxofre de qualquer forma e ácido sulfúrico (incluindo o óleum).",
+          "fora": ["Sulfatos e sulfitos industriais", "Dióxido de enxofre (28.11.23)"],
+          "grupos": [
+            { "etapa": "Enxofre", "ncms": ["2503", "2802"] },
+            { "etapa": "Ácido sulfúrico", "ncms": ["2807"] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "III",
+      "nome": "Classe III — Prioridade baixa",
+      "minerais": [
+        {
+          "nome": "Nióbio",
+          "criterio": "Minério de nióbio, tântalo ou vanádio (26.15.90, NCM compartilhada), ferro-nióbio e nióbio metálico (81.12.91 e 81.12.92, posição compartilhada com gálio, índio e outros metais).",
+          "fora": ["Óxidos de nióbio (28.25.90): NCM genérica de óxidos de outros metais"],
+          "grupos": [
+            { "etapa": "Minério e concentrado (inclui tântalo e vanádio)", "ncms": ["26159000"] },
+            { "etapa": "Ferro-nióbio", "ncms": ["72029300"] },
+            { "etapa": "Nióbio metálico (posição compartilhada com gálio, índio etc.)", "ncms": ["81129100", "81129200"] }
+          ]
+        },
+        {
+          "nome": "Estanho",
+          "criterio": "Minério e concentrado, estanho em formas brutas e resíduos.",
+          "fora": ["Obras de estanho (80.03 a 80.07)"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2609"] },
+            { "etapa": "Estanho em formas brutas e resíduos", "ncms": ["8001", "8002"] }
+          ]
+        },
+        {
+          "nome": "Ferro",
+          "criterio": "Minério de ferro, aglomerados (pelotas), piritas ustuladas, ferro fundido bruto e ferro esponja.",
+          "fora": ["Aço e produtos siderúrgicos (a partir da posição 72.06)", "Ferroligas, que foram listadas em cada elemento (manganês, cromo, silício etc.)"],
+          "grupos": [
+            { "etapa": "Minério de ferro e pelotas", "ncms": ["2601"] },
+            { "etapa": "Ferro-gusa e ferro esponja", "ncms": ["7201", "7203"] }
+          ]
+        },
+        {
+          "nome": "Zinco",
+          "criterio": "Minério e concentrado, zinco em formas brutas, pós, poeiras e resíduos, e óxido de zinco.",
+          "fora": ["Obras de zinco (79.04 a 79.07)", "Aço galvanizado, que é classificado como aço"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2608"] },
+            { "etapa": "Zinco em formas brutas, pós e resíduos", "ncms": ["7901", "7902", "7903"] },
+            { "etapa": "Compostos", "ncms": ["2817"] }
+          ]
+        },
+        {
+          "nome": "Ouro",
+          "criterio": "Minérios de metais preciosos (26.16.90, NCM compartilhada), ouro em formas brutas e semimanufaturadas (para uso não monetário e monetário) e resíduos e cinzas de ouro.",
+          "fora": ["Joias e artefatos de ouro (71.13)"],
+          "grupos": [
+            { "etapa": "Minérios de metais preciosos", "ncms": ["26169000"] },
+            { "etapa": "Ouro em formas brutas e semimanufaturadas", "ncms": ["7108"] },
+            { "etapa": "Resíduos e cinzas de ouro", "ncms": ["7112100", "71129100", "71123010"] }
+          ]
+        },
+        {
+          "nome": "Magnésio",
+          "criterio": "Magnesita, magnésia calcinada e eletrofundida, magnésio metálico em formas brutas e resíduos, hidróxido e peróxido de magnésio.",
+          "fora": ["Obras de magnésio (81.04.90)", "Cloreto e sulfato de magnésio"],
+          "grupos": [
+            { "etapa": "Magnesita e magnésia", "ncms": ["2519"] },
+            { "etapa": "Magnésio metálico em formas brutas e resíduos", "ncms": ["81041", "81042", "81043"] },
+            { "etapa": "Hidróxido e peróxido de magnésio", "ncms": ["28161"] }
+          ]
+        },
+        {
+          "nome": "Molibdênio",
+          "criterio": "Minério (molibdenita), metal em formas brutas e pós, ferro-molibdênio, óxidos e molibdatos.",
+          "fora": ["Barras, chapas, fios e obras de molibdênio (81.02.92 a 81.02.99)"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["2613"] },
+            { "etapa": "Metal e ferro-molibdênio", "ncms": ["81021000", "81029100", "81029400", "81029700", "72027"] },
+            { "etapa": "Compostos", "ncms": ["28257", "28417"] }
+          ]
+        },
+        {
+          "nome": "Tório",
+          "criterio": "Só o minério de tório (26.12.20). O tório metálico e seus compostos estão na NCM 28.44.30, atribuída ao urânio.",
+          "fora": ["Tório e compostos (28.44.30): NCM compartilhada, atribuída ao urânio"],
+          "grupos": [
+            { "etapa": "Minério e concentrado", "ncms": ["26122"] }
+          ]
+        },
+        {
+          "nome": "Alumínio",
+          "criterio": "Bauxita, alumina e hidróxido de alumínio, alumínio em formas brutas (primário e ligas), pós e resíduos.",
+          "fora": ["Laminados, extrudados, fios e obras de alumínio (76.04 a 76.16): semimanufaturados e manufaturas"],
+          "grupos": [
+            { "etapa": "Bauxita (minério)", "ncms": ["2606"] },
+            { "etapa": "Alumina e hidróxido de alumínio", "ncms": ["28182", "28183"] },
+            { "etapa": "Alumínio em formas brutas, pós e resíduos", "ncms": ["7601", "7602", "7603"] }
+          ]
+        },
+        {
+          "nome": "Grupo da platina",
+          "criterio": "Platina, paládio, ródio, irídio, ósmio e rutênio em formas brutas, em pó ou semimanufaturadas, e resíduos e cinzas de platina.",
+          "fora": ["Catalisadores com platina (71.15)", "Joias"],
+          "grupos": [
+            { "etapa": "Platina, paládio, ródio, irídio, ósmio e rutênio", "ncms": ["7110"] },
+            { "etapa": "Resíduos e cinzas de platina", "ncms": ["71122000", "71129200", "71123020"] }
+          ]
+        }
+      ]
+    }
+  ]
+}

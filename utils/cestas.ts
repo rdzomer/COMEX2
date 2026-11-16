@@ -1,4 +1,4 @@
-/** Cestas de NCMs por entidade: tipos, carregamento dos arquivos gerados pela tarefa mensal e agregações. */
+/** Cestas de NCMs (por entidade e temáticas): tipos, carregamento dos arquivos gerados pela tarefa mensal e agregações. */
 import { MonthlySeriesPoint, YearRowKind } from '../types.ts';
 import { pad2 } from './formatting.ts';
 
@@ -6,14 +6,24 @@ export type Flow = 'import' | 'export';
 
 export interface CestaNcm { ncm: string; descricao: string; categoria: string; subcategorias: string[] }
 
+/** 'entidade' = NCMs de uma entidade setorial (ABAL, IBÁ…); 'tematica' = cesta montada por tema (ex.: minerais críticos). */
+export type CestaTipo = 'entidade' | 'tematica';
+export interface CestaFonte { rotulo: string; url: string }
+export interface CestaClasse { id: string; nome: string; minerais: string[] }
+/** Descrição de uma cesta temática (vem do dicionário e é repetida no manifesto e no arquivo da cesta). */
+export interface CestaSobre { descricao?: string; fontes?: CestaFonte[]; metodologia?: string[]; classes?: CestaClasse[] }
+
 export interface CestaManifest {
   geradoEm: string;
   atualizacao: { ano: number; mes: number; data: string };
   dicionarioFonte: string;
-  entidades: { id: string; rotulo: string; ncms: number; arquivo: string | null }[];
+  // O nome "entidades" vem da primeira versão (só cestas por entidade) e foi mantido para não quebrar os arquivos já
+  // publicados; hoje a lista traz todas as cestas e 'tipo' diz a espécie de cada uma (ausente = 'entidade').
+  entidades: { id: string; rotulo: string; ncms: number; arquivo: string | null; tipo?: CestaTipo; descricao?: string }[];
 }
 
-export interface CestaData {
+export interface CestaData extends CestaSobre {
+  tipo?: CestaTipo;
   entidade: string;
   rotulo: string;
   geradoEm: string;
@@ -111,6 +121,78 @@ export const sumOver = (m: Map<number, { fob: number; kg: number }>, sel: Set<nu
   sel.forEach(i => { const v = m.get(i); if (v) { fob += v.fob; kg += v.kg; } });
   return { fob, kg };
 };
+
+// ---------------------------------------------------------------------------
+// Balanço por grupo (classe → mineral), para as cestas temáticas
+// ---------------------------------------------------------------------------
+export interface Fluxo { fob: number; kg: number; baseFob: number; baseKg: number }
+export interface GrupoBalanco {
+  name: string;
+  imp: Fluxo;
+  exp: Fluxo;
+  ncms: number;
+  filhos: GrupoBalanco[];
+}
+const novoFluxo = (): Fluxo => ({ fob: 0, kg: 0, baseFob: 0, baseKg: 0 });
+
+/**
+ * Importações e exportações do período, somadas por categoria (classe) e por subcategoria (mineral).
+ * Considera a cesta inteira, sem o filtro de navegação da tela.
+ */
+export function balancoPorClasse(data: CestaData, period: PeriodOption): GrupoBalanco[] {
+  const v = { import: valuesByNcm(data, 'import', period), export: valuesByNcm(data, 'export', period) };
+  const classes = new Map<string, GrupoBalanco>();
+  data.ncms.forEach((n, i) => {
+    const [mineral] = n.subcategorias;
+    let c = classes.get(n.categoria);
+    if (!c) { c = { name: n.categoria, imp: novoFluxo(), exp: novoFluxo(), ncms: 0, filhos: [] }; classes.set(n.categoria, c); }
+    let m = mineral ? c.filhos.find(f => f.name === mineral) : undefined;
+    if (mineral && !m) { m = { name: mineral, imp: novoFluxo(), exp: novoFluxo(), ncms: 0, filhos: [] }; c.filhos.push(m); }
+    for (const g of m ? [c, m] : [c]) {
+      g.ncms++;
+      for (const [flow, alvo] of [['import', g.imp], ['export', g.exp]] as const) {
+        const cur = v[flow].cur.get(i), base = v[flow].base.get(i);
+        if (cur) { alvo.fob += cur.fob; alvo.kg += cur.kg; }
+        if (base) { alvo.baseFob += base.fob; alvo.baseKg += base.kg; }
+      }
+    }
+  });
+  const ordem = [...classes.values()];
+  // Mantém a ordem das classes definida no dicionário (I, II, III); minerais do maior para o menor fluxo
+  if (data.classes?.length) ordem.sort((a, b) => data.classes!.findIndex(c => c.nome === a.name) - data.classes!.findIndex(c => c.nome === b.name));
+  ordem.forEach(c => c.filhos.sort((a, b) => Math.max(b.imp.fob, b.exp.fob) - Math.max(a.imp.fob, a.exp.fob)));
+  return ordem;
+}
+
+// ---------------------------------------------------------------------------
+// Detalhe por NCM (cestas temáticas): peso de cada NCM dentro do mineral e textos de metodologia
+// ---------------------------------------------------------------------------
+export interface LinhaNcm {
+  ncm: string; descricao: string;
+  classe: string; mineral: string; etapa: string;
+  imp: Fluxo; exp: Fluxo;
+}
+
+/** Uma linha por NCM da cesta, com importações e exportações do período (e da base de comparação). */
+export function linhasPorNcm(data: CestaData, period: PeriodOption): LinhaNcm[] {
+  const v = { import: valuesByNcm(data, 'import', period), export: valuesByNcm(data, 'export', period) };
+  const fluxo = (flow: Flow, i: number): Fluxo => {
+    const c = v[flow].cur.get(i), b = v[flow].base.get(i);
+    return { fob: c?.fob ?? 0, kg: c?.kg ?? 0, baseFob: b?.fob ?? 0, baseKg: b?.kg ?? 0 };
+  };
+  return data.ncms.map((n, i) => ({
+    ncm: n.ncm, descricao: n.descricao,
+    classe: n.categoria, mineral: n.subcategorias[0] ?? '', etapa: n.subcategorias[1] ?? '',
+    imp: fluxo('import', i), exp: fluxo('export', i),
+  }));
+}
+
+export interface TematicaDetalhe { classe: string; criterio: string; fora: string[] }
+export interface DicionarioTematico {
+  geradoEm: string; hash: string; fonte: string;
+  cestas: (CestaSobre & { id: string; label: string; detalhes: Record<string, TematicaDetalhe>; ncms: CestaNcm[] })[];
+}
+export const loadDicionarioTematico = () => getJson<DicionarioTematico>('/cestas/dicionario-tematicas.json');
 
 // ---------------------------------------------------------------------------
 // Árvore hierárquica

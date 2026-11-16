@@ -22,7 +22,7 @@ const MetodologiaAlertas: React.FC = () => (
     <H2>1. Dados</H2>
     <ul className="mt-3 list-disc space-y-1.5 pl-5">
       <li><b>Fonte:</b> API Comex Stat (MDIC/SECEX). Importações mensais por NCM desde 2019 (US$ FOB e kg), séries anuais de importação e exportação desde 2010, e importações por país de origem (ano anterior completo e ano corrente até o último mês).</li>
-      <li><b>Cestas:</b> NCMs de cada entidade segundo a planilha CGIM/DINTE (abas das entidades).</li>
+      <li><b>Cestas:</b> NCMs de cada entidade segundo a planilha CGIM/DINTE (abas das entidades) e as cestas temáticas, como a de minerais críticos e estratégicos do CIMCE.</li>
       <li><b>Atualização:</b> automática, nos dias 7, 10 e 15 de cada mês, quando o Comex Stat publica o mês novo. Os alertas são recalculados na mesma rotina.</li>
       <li><b>Volume:</b> todos os cálculos de quantidade usam o peso líquido (kg).</li>
       <li><b>Consumo nacional aparente (opcional):</b> planilha de NF-e (RFB/SECEX), carregada pelo usuário e lida só no navegador dele.</li>

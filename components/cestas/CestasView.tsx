@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  CestaData, CestaManifest, Flow, TreeNode, loadCesta, loadCestaManifest, selectNcms, nextLevelOptions,
+  CestaData, CestaManifest, CestaTipo, Flow, TreeNode, loadCesta, loadCestaManifest, selectNcms, nextLevelOptions,
   periodOptions, valuesByNcm, sumOver, buildTree, annualSeries, monthlyImports, countriesFor,
 } from '../../utils/cestas.ts';
 import { buildMonthlySeries, buildTwelveMonthSummary } from '../../utils/dataProcessing.ts';
@@ -11,6 +11,9 @@ import { ChartCard, KpiCard, Button, SegmentedControl, Swatch, Icons } from '../
 import DataTable, { VarCell } from '../DataTable.tsx';
 import Section from '../Section.tsx';
 import { AvisoAlertas } from './AlertasRadar.tsx';
+import MineraisPanorama from './MineraisPanorama.tsx';
+import PesoPorNcm from './PesoPorNcm.tsx';
+import MetodologiaNcms from './MetodologiaNcms.tsx';
 import { loadAlertas } from '../../utils/cestas.ts';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 
@@ -33,6 +36,7 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
   const [countryKey, setCountryKey] = useState<'anterior' | 'atual'>('atual');
   const [countryMetric, setCountryMetric] = useState<'metricFOB' | 'metricKG'>('metricFOB');
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [metodoAberto, setMetodoAberto] = useState(false);
   const [alertCount, setAlertCount] = useState<Record<string, number>>({});
   useEffect(() => {
     loadAlertas().then(f => {
@@ -51,6 +55,12 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
   }, []);
 
   const entity = manifest?.entidades.find(e => e.id === entityId);
+  const tipoAtual: CestaTipo = entity?.tipo ?? 'entidade';
+  const temTematicas = !!manifest?.entidades.some(e => e.tipo === 'tematica');
+  const escolherTipo = (t: CestaTipo) => {
+    const primeira = manifest?.entidades.find(e => (e.tipo ?? 'entidade') === t && e.arquivo);
+    if (primeira) setEntityId(primeira.id);
+  };
   useEffect(() => {
     if (!entity) return;
     localStorageSet('cestas.entidade', entity.id);
@@ -153,18 +163,28 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
       <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500">Cestas de NCMs por entidade</p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-900">{entity?.rotulo ?? 'Escolha uma entidade'}</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500">{tipoAtual === 'tematica' ? 'Cestas temáticas de NCMs' : 'Cestas de NCMs por entidade'}</p>
+            <h1 className="mt-1 text-xl font-semibold text-slate-900">{entity?.rotulo ?? 'Escolha uma cesta'}</h1>
             <p className="mt-1 text-sm text-slate-500">
               Dados Comex Stat até <b className="font-medium text-slate-700">{getMonthNamePtBR(upd.mes)} de {upd.ano}</b>
               {' · '}atualizados automaticamente em {new Date(manifest.geradoEm).toLocaleDateString('pt-BR')}
               {entity ? ` · ${entity.ncms} NCMs na cesta` : ''}
             </p>
           </div>
-          {data && <Button onClick={exportExcel} icon={Icons.excel}>Excel</Button>}
+          {data && (
+            <div className="flex flex-wrap items-center gap-2">
+              {data.tipo === 'tematica' && <Button variant={metodoAberto ? 'primary' : 'secondary'} onClick={() => setMetodoAberto(v => !v)}>Metodologia e NCMs</Button>}
+              <Button onClick={exportExcel} icon={Icons.excel}>Excel</Button>
+            </div>
+          )}
         </div>
+        {temTematicas && (
+          <div className="mt-4">
+            <SegmentedControl value={tipoAtual} onChange={escolherTipo} options={[{ value: 'entidade', label: 'Por entidade' }, { value: 'tematica', label: 'Temáticas' }]} />
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap gap-2">
-          {manifest.entidades.map(e => (
+          {manifest.entidades.filter(e => (e.tipo ?? 'entidade') === tipoAtual).map(e => (
             <button
               key={e.id}
               onClick={() => setEntityId(e.id)}
@@ -178,6 +198,8 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
           ))}
         </div>
       </section>
+
+      {data?.tipo === 'tematica' && metodoAberto && period && <MetodologiaNcms data={data} period={period} onOpenNcm={onOpenNcm} onClose={() => setMetodoAberto(false)} />}
 
       {entity && !entity.arquivo && <Notice tone="amber">A aba {entity.rotulo} está vazia na planilha CGIM/DINTE. Inclua as NCMs dessa entidade na planilha para a cesta aparecer.</Notice>}
       {loading && <Notice>Carregando a cesta {entity?.rotulo}…</Notice>}
@@ -204,7 +226,7 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
             </div>
             {options.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <span className="mr-1 self-center text-xs font-medium text-slate-500">{prefix.length === 0 ? 'Categoria' : `Subcategoria (${prefix.length})`}:</span>
+                <span className="mr-1 self-center text-xs font-medium text-slate-500">{nivelRotulo(data.tipo, prefix.length)}:</span>
                 {options.slice(0, 24).map(o => (
                   <button key={o.name} onClick={() => setPrefix([...prefix, o.name])} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 hover:bg-brand-50 hover:text-brand-700">
                     {o.name}{o.fob > 0 && <span className="ml-1.5 text-slate-400">US$ {formatCompactPtBR(o.fob)}</span>}
@@ -221,6 +243,20 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
             <KpiCard label="Preço médio" value={formatDecimalPtBR(perTon(total.fob, total.kg))} unit="US$/t" delta={pct(perTon(total.fob, total.kg) ?? 0, perTon(totalBase.fob, totalBase.kg) ?? 0)} deltaLabel={`vs ${vals.baseLabel}`} />
             <KpiCard label="Importações · últimos 12 meses" value={twelve ? formatCompactPtBR(twelve.blocks[0].importacaoKg) : '–'} unit="kg" delta={twelve?.comparisons[0].resultado != null ? twelve.comparisons[0].resultado * 100 : null} deltaLabel="vs 12 meses anteriores" />
           </div>
+
+          {data.tipo === 'tematica' && data.classes?.length ? (
+            <Section title={`Panorama por classe · ${period.label}`}
+              description="Importações e exportações de cada classe da lista do CIMCE, por mineral. Clique num mineral para filtrar a página.">
+              <MineraisPanorama data={data} period={period} onPick={setPrefix} />
+            </Section>
+          ) : null}
+
+          {data.tipo === 'tematica' && data.classes?.length ? (
+            <Section title={`Peso de cada NCM dentro do mineral · ${period.label}`}
+              description="Escolha um mineral para ver quanto cada NCM representa nas importações e nas exportações dele.">
+              <PesoPorNcm data={data} period={period} onOpenNcm={onOpenNcm} />
+            </Section>
+          ) : null}
 
           <Section title={`Evolução anual · ${contextLabel}`} description={`${flowLabel} da seleção desde 2010.`}>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -256,7 +292,7 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
               <Button variant="ghost" onClick={expandAll}>Expandir tudo</Button>
               <Button variant="ghost" onClick={() => setOpen(new Set())}>Recolher</Button>
             </>}>
-            <HierarchyTable nodes={tree} open={open} toggle={toggle} total={total.fob} period={period.label} base={vals.baseLabel} onOpenNcm={onOpenNcm} />
+            <HierarchyTable nodes={tree} open={open} toggle={toggle} total={total.fob} period={period.label} base={vals.baseLabel} onOpenNcm={onOpenNcm} fonte={data.tipo === 'tematica' ? 'Classificação: lista de minerais do CIMCE; NCMs escolhidas neste projeto.' : 'Classificação: planilha CGIM/DINTE.'} />
           </Section>
 
           <Section title="Importações acumuladas em 12 meses" description={`Soma móvel de 12 meses (kg) da seleção: ${contextLabel}.`}>
@@ -299,6 +335,12 @@ const CestasView: React.FC<Props> = ({ onOpenNcm }) => {
 // ---------------------------------------------------------------------------
 function Notice({ children, tone = 'slate' }: { children: React.ReactNode; tone?: 'slate' | 'amber' }) {
   return <div className={`mb-4 rounded-xl border p-4 text-sm ${tone === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-500'}`}>{children}</div>;
+}
+
+/** Nome do nível de classificação nos filtros: nas cestas de minerais, classe → mineral → etapa da cadeia. */
+function nivelRotulo(tipo: CestaTipo | undefined, nivel: number) {
+  if (tipo === 'tematica') return ['Classe', 'Mineral', 'Etapa da cadeia'][nivel] ?? `Nível ${nivel + 1}`;
+  return nivel === 0 ? 'Categoria' : `Subcategoria (${nivel})`;
 }
 
 function localStorageGet(k: string) { try { return localStorage.getItem(k); } catch { return null; } }
@@ -349,8 +391,8 @@ function CompositionChart({ items, total, flow, onPick }: { items: { name: strin
   );
 }
 
-function HierarchyTable({ nodes, open, toggle, total, period, base, onOpenNcm }: {
-  nodes: TreeNode[]; open: Set<string>; toggle: (k: string) => void; total: number; period: string; base: string; onOpenNcm: (n: string) => void;
+function HierarchyTable({ nodes, open, toggle, total, period, base, onOpenNcm, fonte }: {
+  nodes: TreeNode[]; open: Set<string>; toggle: (k: string) => void; total: number; period: string; base: string; onOpenNcm: (n: string) => void; fonte: string;
 }) {
   const rows: { node: TreeNode; depth: number }[] = [];
   const walk = (list: TreeNode[], d: number) => list.forEach(n => { rows.push({ node: n, depth: d }); if (open.has(n.key)) walk(n.children, d + 1); });
@@ -398,7 +440,7 @@ function HierarchyTable({ nodes, open, toggle, total, period, base, onOpenNcm }:
           </tbody>
         </table>
       </div>
-      <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">Fonte: Comex Stat/MDIC. Classificação: planilha CGIM/DINTE.</p>
+      <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">Fonte: Comex Stat/MDIC. {fonte}</p>
     </div>
   );
 }

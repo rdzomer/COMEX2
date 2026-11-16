@@ -1,13 +1,13 @@
 {
- "geradoEm": "2026-11-12T17:37:29.881Z",
+ "geradoEm": "2026-11-16T13:07:01.278Z",
  "atualizacao": {
   "ano": 2026,
   "mes": 10,
   "data": "2026-11-06"
  },
- "dicionarioHash": "72a5ad0a2115458d",
+ "dicionarioHash": "72a5ad0a2115458d+8b6466bed94d1b4b",
  "dicionarioFonte": "cgim_dinte.xlsx",
- "chamadasApi": 145,
+ "chamadasApi": 65,
  "entidades": [
   {
    "id": "ABAL",
@@ -18,6 +18,7 @@
   {
    "id": "ABCOBRE",
    "rotulo": "ABCOBRE",
+   "tipo": "entidade",
    "ncms": 0,
    "arquivo": null
   },
@@ -66,12 +67,22 @@
   {
    "id": "IBRAM",
    "rotulo": "IBRAM",
+   "tipo": "entidade",
    "ncms": 0,
    "arquivo": null
   },
   {
+   "id": "MINERAIS",
+   "rotulo": "Minerais críticos e estratégicos",
+   "tipo": "tematica",
+   "descricao": "27 minerais da lista do Conselho Nacional de Política Mineral (CIMCE), em três classes de prioridade. Cada NCM entra uma única vez (no mineral principal), para que as somas por classe não tenham dupla contagem.",
+   "ncms": 302,
+   "arquivo": "MINERAIS.json"
+  },
+  {
    "id": "SICETEL",
    "rotulo": "SICETEL",
+   "tipo": "entidade",
    "ncms": 0,
    "arquivo": null
   },

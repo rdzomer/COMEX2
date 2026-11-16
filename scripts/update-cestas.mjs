@@ -1,12 +1,13 @@
 /**
- * Atualiza os dados das cestas de NCMs por entidade (public/cestas/*.json) consultando a API Comex Stat
+ * Atualiza os dados das cestas de NCMs — por entidade e temáticas, como a de minerais críticos — (public/cestas/*.json)
+ * consultando a API Comex Stat
  * DEVAGAR: uma requisição por vez, com pausa entre elas e espera longa quando a API recusa (HTTP 429).
  *
  * Roda pelo GitHub Actions (.github/workflows/atualizar-cestas.yml) todo dia 7 e pode ser executado
  * manualmente. Se a API ainda não publicou mês novo e o dicionário não mudou, não faz nada.
  *
  * Variáveis: FORCE=1 (atualiza mesmo sem mês novo), DELAY_MS (pausa entre chamadas, padrão 8000),
- *            ONLY=IABR,ABAL (limita a algumas entidades, para teste)
+ *            ONLY=IABR,ABAL (limita a algumas cestas, para teste; a temática de minerais é ONLY=MINERAIS)
  */
 import fs from 'node:fs';
 
@@ -71,6 +72,10 @@ const monthOf = row => Number(row.monthNumber ?? row.coMes ?? row.month ?? 0);
 
 // ---------------------------------------------------------------------------
 const dict = JSON.parse(fs.readFileSync(`${OUT_DIR}/dicionario.json`, 'utf8'));
+// Cestas temáticas (geradas por scripts/build-tematicas.mjs a partir de dados-fonte/minerais-criticos.json)
+const temPath = `${OUT_DIR}/dicionario-tematicas.json`;
+const tem = fs.existsSync(temPath) ? JSON.parse(fs.readFileSync(temPath, 'utf8')) : { hash: '', cestas: [] };
+const dicionarioHash = `${dict.hash}+${tem.hash}`;
 const manifestPath = `${OUT_DIR}/manifest.json`;
 const oldManifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : null;
 
@@ -78,16 +83,17 @@ const upd = (await request(`${API}/general/dates/updated`, {}, 'data de atualiza
 const Y = Number(upd.year), M = Number(upd.monthNumber), MM = pad2(M);
 console.log(`API Comex Stat atualizada até ${MM}/${Y} (${upd.updated}).`);
 
-if (!FORCE && !ONLY.length && oldManifest?.atualizacao?.ano === Y && oldManifest?.atualizacao?.mes === M && oldManifest?.dicionarioHash === dict.hash) {
+if (!FORCE && !ONLY.length && oldManifest?.atualizacao?.ano === Y && oldManifest?.atualizacao?.mes === M && oldManifest?.dicionarioHash === dicionarioHash) {
   console.log('Dados já estão atualizados e o dicionário não mudou. Nada a fazer.');
   process.exit(0);
 }
 
-const entities = dict.entidades.filter(e => e.ncms.length && (!ONLY.length || ONLY.includes(e.id)));
+const todasAsCestas = [...dict.entidades.map(e => ({ ...e, tipo: 'entidade' })), ...tem.cestas];
+const entities = todasAsCestas.filter(e => e.ncms.length && (!ONLY.length || ONLY.includes(e.id.toUpperCase())));
 const allNcms = [...new Set(entities.flatMap(e => e.ncms.map(n => n.ncm)))].sort();
 const chunks = [];
 for (let i = 0; i < allNcms.length; i += CHUNK) chunks.push(allNcms.slice(i, i + CHUNK));
-console.log(`${entities.length} entidades, ${allNcms.length} NCMs distintas, ${chunks.length} lotes.`);
+console.log(`${entities.length} cestas, ${allNcms.length} NCMs distintas, ${chunks.length} lotes.`);
 
 // Acumuladores por NCM
 const annual = { import: [], export: [] };     // [ncm, ano, fob, kg]
@@ -146,6 +152,8 @@ for (const e of entities) {
   const data = {
     entidade: e.id,
     rotulo: e.label,
+    tipo: e.tipo,
+    ...(e.tipo === 'tematica' ? { descricao: e.descricao, fontes: e.fontes, metodologia: e.metodologia, classes: e.classes } : {}),
     geradoEm,
     atualizacao: { ano: Y, mes: M, data: upd.updated },
     ncms: e.ncms,
@@ -163,12 +171,12 @@ for (const e of entities) {
   };
   const file = `${e.id}.json`;
   fs.writeFileSync(`${OUT_DIR}/${file}`, JSON.stringify(data));
-  manifestEntities.push({ id: e.id, rotulo: e.label, ncms: e.ncms.length, arquivo: file });
+  manifestEntities.push({ id: e.id, rotulo: e.label, tipo: e.tipo, ...(e.tipo === 'tematica' ? { descricao: e.descricao } : {}), ncms: e.ncms.length, arquivo: file });
   console.log(`✓ ${e.label}: ${data.anual.import.length + data.anual.export.length} linhas anuais`);
 }
 
 // Entidades sem NCMs na planilha também aparecem (com aviso no app)
-for (const e of dict.entidades.filter(x => !x.ncms.length)) manifestEntities.push({ id: e.id, rotulo: e.label, ncms: 0, arquivo: null });
+for (const e of dict.entidades.filter(x => !x.ncms.length)) manifestEntities.push({ id: e.id, rotulo: e.label, tipo: 'entidade', ncms: 0, arquivo: null });
 if (ONLY.length && oldManifest) {
   for (const old of oldManifest.entidades) if (!manifestEntities.some(m => m.id === old.id)) manifestEntities.push(old);
 }
@@ -177,7 +185,7 @@ manifestEntities.sort((a, b) => a.rotulo.localeCompare(b.rotulo, 'pt-BR'));
 fs.writeFileSync(manifestPath, JSON.stringify({
   geradoEm,
   atualizacao: { ano: Y, mes: M, data: upd.updated },
-  dicionarioHash: dict.hash,
+  dicionarioHash,
   dicionarioFonte: dict.fonte,
   chamadasApi: calls,
   entidades: manifestEntities,

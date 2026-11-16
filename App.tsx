@@ -645,7 +645,7 @@ const App: React.FC = () => {
             </span>
           </button>
           <div className="flex rounded-lg bg-white/10 p-0.5">
-            {([['ficha', 'Ficha por NCM'], ['cestas', 'Cestas por entidade'], ['alertas', '🚨 Radar de alertas']] as [Mode, string][]).map(([m, label]) => (
+            {([['ficha', 'Ficha por NCM'], ['cestas', 'Cestas de NCMs'], ['alertas', '🚨 Radar de alertas']] as [Mode, string][]).map(([m, label]) => (
               <button key={m} onClick={() => goTo(m)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === m || (m === 'alertas' && mode === 'metodologia') ? 'bg-white text-brand-900' : 'text-white/70 hover:text-white'}`}>{label}</button>
             ))}
           </div>
@@ -675,7 +675,7 @@ const App: React.FC = () => {
             <div className="mt-8 flex justify-center"><NcmInput onSubmit={handleNcmSubmit} loading={loading} variant="hero" /></div>
             <p className="mt-3 text-xs text-slate-500">Aceita o código com ou sem pontos: 7213.10.00 ou 72131000.</p>
             <button onClick={() => goTo('cestas')} className="mt-10 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm hover:border-brand-500 hover:text-brand-600">
-              Ou analise as cestas de NCMs por entidade (ABAL, IABR, IBÁ…) →
+              Ou analise as cestas de NCMs: por entidade (ABAL, IABR, IBÁ…) ou temáticas, como minerais críticos →
             </button>
           </div>
         )}
