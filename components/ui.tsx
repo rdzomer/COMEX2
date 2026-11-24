@@ -134,3 +134,85 @@ export const Icons = {
   excel: <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm2.25 8.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 3a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z" clipRule="evenodd" /></svg>,
   word: <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>,
 };
+
+// ---------------------------------------------------------------------------
+// Seletor de métrica (US$ FOB · kg líquido · Unidade estatística) — mesmo componente em todas as seções
+// ---------------------------------------------------------------------------
+export type MetricKey = 'metricFOB' | 'metricKG' | 'metricStatistic';
+export function MetricSelector({ value, onChange, unitName }: { value: MetricKey; onChange: (m: MetricKey) => void; unitName: string }) {
+  return (
+    <SegmentedControl<MetricKey>
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: 'metricFOB', label: 'US$ FOB' },
+        { value: 'metricKG', label: 'kg líquido' },
+        { value: 'metricStatistic', label: `Unidade estatística (${unitName})` },
+      ]}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Seletor de país com busca por digitação
+// ---------------------------------------------------------------------------
+export function CountryPicker({ countries, value, onChange }: { countries: string[]; value: string | null; onChange: (c: string | null) => void }) {
+  const [text, setText] = useState(value ?? '');
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => { setText(value ?? ''); }, [value]);
+  useEffect(() => {
+    const close = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const q = norm(text.trim());
+  const ALL = 'Todos (dados gerais)';
+  const showAll = !q || value !== null && text === value;
+  const filtered = showAll ? countries : countries.filter(c => norm(c).includes(q));
+  const options = [ALL, ...filtered];
+  const pick = (c: string) => { const v = c === ALL ? null : c; onChange(v); setText(v ?? ''); setOpen(false); };
+  return (
+    <div ref={box} className="relative">
+      <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+        País
+        <span className="relative">
+          <input
+            value={text}
+            placeholder={ALL}
+            onFocus={() => { setOpen(true); setHi(0); }}
+            onChange={e => { setText(e.target.value); setOpen(true); setHi(e.target.value.trim() ? 1 : 0); }}
+            onKeyDown={e => {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi(h => Math.min(h + 1, options.length - 1)); }
+              else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)); }
+              else if (e.key === 'Enter') { e.preventDefault(); if (options[hi]) pick(options[hi]); }
+              else if (e.key === 'Escape') { setOpen(false); setText(value ?? ''); }
+            }}
+            className="w-56 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 pr-7 text-xs text-slate-800 placeholder:text-slate-500 focus:border-brand-500 focus:outline-none"
+            aria-label="País"
+            role="combobox"
+            aria-expanded={open}
+          />
+          {value && (
+            <button type="button" onClick={() => pick(ALL)} title="Voltar para todos" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">✕</button>
+          )}
+        </span>
+      </label>
+      {open && (
+        <ul role="listbox" className="absolute right-0 z-20 mt-1 max-h-64 w-56 overflow-auto rounded-lg border border-slate-200 bg-white py-1 text-xs shadow-lg">
+          {options.map((c, i) => (
+            <li key={c} role="option" aria-selected={c === (value ?? ALL)}
+              onMouseDown={e => { e.preventDefault(); pick(c); }}
+              onMouseEnter={() => setHi(i)}
+              className={`cursor-pointer px-3 py-1.5 ${i === hi ? 'bg-brand-50 text-brand-700' : 'text-slate-700'} ${c === ALL ? 'border-b border-slate-100 font-medium' : ''}`}>
+              {c}
+            </li>
+          ))}
+          {filtered.length === 0 && <li className="px-3 py-1.5 text-slate-400">Nenhum país com comércio desta NCM</li>}
+        </ul>
+      )}
+    </div>
+  );
+}

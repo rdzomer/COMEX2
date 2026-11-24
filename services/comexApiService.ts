@@ -1,4 +1,4 @@
-import { LastUpdateData, ComexStatRecord, FlowType, ApiFilter, Period, CountryDataRecord, MonthlyComexStatRecord } from '../types.ts';
+import { LastUpdateData, ComexStatRecord, FlowType, ApiFilter, Period, CountryDataRecord, CountryYearRecord, MonthlyComexStatRecord } from '../types.ts';
 import { parseApiNumber, pad2 } from '../utils/formatting.ts';
 
 const API_BASE_URL = "https://api-comexstat.mdic.gov.br";
@@ -139,7 +139,7 @@ export async function fetchMonthlyComexData(
     const month = field ? Number(raw[field]) : NaN;
     const year = Number(raw.year);
     if (isNaN(year) || isNaN(month) || month < 1 || month > 12) return [];
-    return [{ year, month, metricFOB: parseApiNumber(raw.metricFOB), metricKG: parseApiNumber(raw.metricKG) }];
+    return [{ year, month, metricFOB: parseApiNumber(raw.metricFOB), metricKG: parseApiNumber(raw.metricKG), metricStatistic: parseApiNumber(raw.metricStatistic) }];
   });
 }
 
@@ -177,4 +177,31 @@ export async function fetchCountryData(
       representatividadeKG: totalKg > 0 ? (r.metricKG / totalKg) * 100 : 0,
     }))
     .sort((a, b) => b.metricFOB - a.metricFOB);
+}
+
+/**
+ * Comércio por país e por ano num só pedido (monthDetail = false devolve uma linha por ano e país).
+ * Atenção: a API aplica o intervalo de meses a cada ano; para anos completos, use `to: AAAA-12`.
+ */
+export async function fetchCountryYearData(ncmCode: string, flow: FlowType, period: Period): Promise<CountryYearRecord[]> {
+  const response = await postGeneral<{ data: { list: ComexStatRecord[] } }>({
+    flow,
+    monthDetail: false,
+    period,
+    filters: [{ filter: "ncm", values: [ncmCode] }],
+    details: ["country"],
+    metrics: ["metricFOB", "metricKG", "metricStatistic"],
+  });
+  const by = new Map<string, CountryYearRecord>();
+  for (const item of response.data?.list || []) {
+    const country = item.country || "Desconhecido";
+    const year = Number(item.year);
+    const k = `${country}|${year}`;
+    const cur = by.get(k) ?? { country, year, metricFOB: 0, metricKG: 0, metricStatistic: 0 };
+    cur.metricFOB += parseApiNumber(item.metricFOB);
+    cur.metricKG += parseApiNumber(item.metricKG);
+    cur.metricStatistic += parseApiNumber(item.metricStatistic);
+    by.set(k, cur);
+  }
+  return [...by.values()];
 }
