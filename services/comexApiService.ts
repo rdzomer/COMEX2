@@ -128,7 +128,8 @@ export async function fetchMonthlyComexData(
   const results = await Promise.all(years.map(async year => {
     const yearPeriod: Period = { from: `${year}-01`, to: year === endYear ? `${year}-${pad2(endMonth)}` : `${year}-12` };
     const response = await postGeneral<{ data: { list: ComexStatRecord[] } }>({
-      flow, monthDetail: true, period: yearPeriod, filters, details: [], metrics,
+      // A quantidade estatística só é aceita pela API com detalhamento por NCM
+      flow, monthDetail: true, period: yearPeriod, filters, details: metrics.includes('metricStatistic') ? ['ncm'] : [], metrics,
     });
     return response.data?.list || [];
   }));
@@ -189,7 +190,7 @@ export async function fetchCountryYearData(ncmCode: string, flow: FlowType, peri
     monthDetail: false,
     period,
     filters: [{ filter: "ncm", values: [ncmCode] }],
-    details: ["country"],
+    details: ["country", "ncm"], // a quantidade estatística exige o detalhamento por NCM
     metrics: ["metricFOB", "metricKG", "metricStatistic"],
   });
   const by = new Map<string, CountryYearRecord>();
