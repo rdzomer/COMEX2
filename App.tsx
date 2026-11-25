@@ -14,18 +14,25 @@ import MetodologiaAlertas from './components/cestas/MetodologiaAlertas.tsx';
 import { mercadoDaNfe, salvarMercado } from './utils/mercado.ts';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
 
-import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryYearData } from './services/comexApiService.ts';
+import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryYearData, fetchUfYearData } from './services/comexApiService.ts';
 import { parseCgimDinteExcelForFiltering, parseNfeExcel, downloadWorkbook } from './services/excelService.ts';
 import {
   processAnnualTradeData, sortAnnualRows, createYearSummary, buildMonthlySeries, buildTwelveMonthSummary,
   processNfeSalesData, processNfeCnaData, ensureVendasInternas, analyzeImportSurge,
 } from './utils/dataProcessing.ts';
-import { formatIntegerPtBR, formatDecimalPtBR, formatNcmCode, formatPercentagePtBR, getMonthNamePtBR, pad2 } from './utils/formatting.ts';
+import { formatIntegerPtBR, formatDecimalPtBR, formatNcmCode, formatPercentagePtBR, getMonthNamePtBR, pad2, formatCompactPtBR } from './utils/formatting.ts';
 import { elementToPng } from './utils/chartToImage.ts';
 import {
   Metric, unitName, isKgUnit, metricShort, metricUnit, KG_UNIT_NOTE, countriesForYears, shareKey, tradingCountries,
   countryYearPrice, shareEvolution, countryColors, monthlyWindow, byYearLines, OTHERS,
 } from './utils/fichaExtras.ts';
+import {
+  Comparacao, opcoesComparacao, registrosDaComparacao, paresPorPais, dadosBolhas, decomposicao, linhasCascata, calendario,
+  concentracao, penetracao, linhasUf, UfRecord, faixaHhi,
+} from './utils/analiticas.ts';
+import {
+  PrecoVolumeChart, CascataChart, EfeitosChart, CalendarioHeatmap, ConcentracaoChart, HhiChart, PenetracaoChart, MapaUf, RankingUfChart, LOCAIS_BR,
+} from './components/charts/AnaliticasKit.tsx';
 import {
   LastUpdateData, NcmDetails, ProcessedTradeData, ApiFilter, Period, CountryPeriodData, CgimNcmInfo,
   EntityContactInfo, NfeData, SectionVisibility, MonthlyComexStatRecord, SurgeAnalysisConfig, SurgeAnalysisResult, CountryYearRecord,
@@ -39,6 +46,7 @@ const initialSectionVisibility: SectionVisibility = {
   showRollingSumImportChart: true,
   showSurgeAnalysis: true,
   showCountryData: true,
+  showUfData: true,
   showExcelAnalysis: true,
 };
 
@@ -87,6 +95,8 @@ const App: React.FC = () => {
   const [surgeAnalysisResult, setSurgeAnalysisResult] = useState<SurgeAnalysisResult | null>(null);
   const [countryPeriodIdx, setCountryPeriodIdx] = useState<'0' | '1'>('1');
   const [countryMetric, setCountryMetric] = useState<Metric>('metricFOB');
+  const [ufData, setUfData] = useState<{ anual: UfRecord[]; ateMes: UfRecord[] } | null>(null);
+  const [comparacao, setComparacao] = useState<Comparacao>('ytd');
   const [priceCountry, setPriceCountry] = useState<string | null>(null);
   const [shareMetric, setShareMetric] = useState<Metric>('metricFOB');
   const [monthMetric, setMonthMetric] = useState<Metric>('metricKG');
@@ -113,6 +123,7 @@ const App: React.FC = () => {
     setRawMonthlyImportData([]);
     setCountryPeriods([]);
     setCountryYears(null);
+    setUfData(null);
     setPriceCountry(null);
     setSurgeAnalysisResult(null);
     setSteps([
@@ -120,6 +131,7 @@ const App: React.FC = () => {
       { key: 'annual', label: 'Séries anuais desde 2004', status: 'pending' },
       { key: 'monthly', label: 'Importações mensais desde 2019', status: 'pending' },
       { key: 'country', label: 'Dados por país e ano desde 2010', status: 'pending' },
+      { key: 'uf', label: 'Importações por UF', status: 'pending' },
     ]);
     const fail = (key: string, msg: string, e: unknown) => {
       console.error(msg, e);
@@ -200,7 +212,21 @@ const App: React.FC = () => {
       } catch (e) { fail('country', 'Falha ao carregar os dados por país.', e); }
     })();
 
-    await Promise.all([annual, monthly, countries]);
+    const ufs = (async () => {
+      setStep('uf', 'running');
+      try {
+        // Importações por UF: os dois últimos anos completos e o ano corrente numa consulta, mais o mesmo período do ano anterior
+        const [anual, ateMes] = await Promise.all([
+          fetchUfYearData(code, 'import', { from: `${Y - 2}-01`, to: `${Y}-12` }),
+          M < 12 ? fetchUfYearData(code, 'import', { from: `${Y - 1}-01`, to: `${Y - 1}-${MM}` }) : Promise.resolve([]),
+        ]);
+        if (!alive()) return;
+        setUfData({ anual, ateMes });
+        setStep('uf', 'done');
+      } catch (e) { fail('uf', 'Falha ao carregar as importações por UF.', e); }
+    })();
+
+    await Promise.all([annual, monthly, countries, ufs]);
   };
 
   // Navegação: #/cestas abre as cestas; #/ncm/XXXXXXXX abre a ficha da NCM
@@ -317,6 +343,32 @@ const App: React.FC = () => {
   const monthTitle = `Evolução mensal das importações (últimos 48 meses)`;
   const monthRange = monthPoints.length ? `${monthPoints[0].name} a ${monthPoints[monthPoints.length - 1].name}` : '';
   const partialFootnote = partialYear && M ? `* até o mês ${M} (${getMonthNamePtBR(M)})` : '';
+
+  // ---- Visões analíticas (bolhas, decomposição, calendário, concentração, penetração, UF) ----
+  const compOpcoes = useMemo(() => (Y && M ? opcoesComparacao(Y, M) : []), [Y, M]);
+  const comp = compOpcoes.find(o => o.chave === comparacao) ?? compOpcoes[0];
+  const paresImp = useMemo(() => {
+    if (!countryYears || !comp || !Y || !M) return [];
+    const r = registrosDaComparacao(comp.chave, Y, M, countryYears.imp, countryYears.impPrev);
+    return paresPorPais(r.anterior, r.atual);
+  }, [countryYears, comp, Y, M]);
+  const bolhas = useMemo(() => dadosBolhas(paresImp, ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']), [paresImp]);
+  const decomp = useMemo(() => decomposicao(paresImp), [paresImp]);
+  const cascata = useMemo(() => linhasCascata(decomp), [decomp]);
+  const cal = useMemo(() => (Y && M && rawMonthlyImportData.length ? calendario(rawMonthlyImportData, monthMetric, 2019, Y, M) : null), [rawMonthlyImportData, monthMetric, Y, M]);
+  const conc = useMemo(() => (countryYears && Y ? concentracao(countryYears.imp, shareMetric, 2010, Y, partialYear) : []), [countryYears, shareMetric, Y, partialYear]);
+  const pen = useMemo(() => penetracao(nfeForNcm), [nfeForNcm]);
+  const ufs = useMemo(() => {
+    if (!ufData || !comp || !Y || !M) return null;
+    const rec = (y: number, base: UfRecord[]) => base.filter(r => r.year === y);
+    const [ant, atu] = comp.chave === 'ytd' && M < 12
+      ? [rec(Y - 1, ufData.ateMes), rec(Y, ufData.anual)]
+      : M < 12 ? [rec(Y - 2, ufData.anual), rec(Y - 1, ufData.anual)] : [rec(Y - 1, ufData.anual), rec(Y, ufData.anual)];
+    return linhasUf(ant, atu, LOCAIS_BR);
+  }, [ufData, comp, Y, M]);
+  const ComparacaoSelector = () => compOpcoes.length > 1 ? (
+    <SegmentedControl<Comparacao> value={comp?.chave ?? 'ano'} onChange={setComparacao} options={compOpcoes.map(o => ({ value: o.chave, label: o.rotulo }))} />
+  ) : comp ? <span className="text-xs text-slate-500">{comp.rotulo}</span> : null;
   const balanceData = annualRows.filter(r => r.kind !== 'prevYtd').map(r => ({
     name: r.year, exp: r['Exportações (US$ FOB)'] || 0, impNeg: -(r['Importações (US$ FOB)'] || 0), balance: r['Balança Comercial (FOB)'] || 0,
   }));
@@ -487,6 +539,14 @@ const App: React.FC = () => {
             ...countryYears.exp.map(r => ({ 'Fluxo': 'Exportação', 'Ano': r.year, 'País': r.country, 'US$ FOB': r.metricFOB, 'KG líquido': r.metricKG, [`Qtd. estatística (${uName})`]: r.metricStatistic })),
           ].sort((a, b) => a['Fluxo'].localeCompare(b['Fluxo']) || a['Ano'] - b['Ano'] || b['US$ FOB'] - a['US$ FOB']) },
         ] : []),
+        ...(comp && decomp.linhas.length ? [{ name: 'Decomposição por país', rows: decomp.linhas.map(l => ({
+          'País': l.pais, [`${comp.anterior} (US$ FOB)`]: l.v0, [`${comp.atual} (US$ FOB)`]: l.v1, [`${comp.anterior} (kg)`]: l.q0, [`${comp.atual} (kg)`]: l.q1,
+          'Variação (US$)': l.delta, 'Efeito quantidade (US$)': l.efeitoQuantidade, 'Efeito preço (US$)': l.efeitoPreco,
+          [`Preço ${comp.anterior} (US$/kg)`]: l.q0 > 0 ? l.v0 / l.q0 : null, [`Preço ${comp.atual} (US$/kg)`]: l.q1 > 0 ? l.v1 / l.q1 : null,
+        })) }] : []),
+        ...(conc.length ? [{ name: 'Concentração de origem', rows: conc.map(c => ({ 'Ano': c.name, 'Maior fornecedor': c.maiorPais, 'Participação do maior (%)': c.maior, 'Participação dos 3 maiores (%)': c.tres, 'HHI': c.hhi, 'Concentração': faixaHhi(c.hhi) })) }] : []),
+        ...(ufs && comp ? [{ name: 'Importações por UF', rows: ufs.linhas.map(l => ({ 'UF': l.uf, [`${comp.anterior} (US$ FOB)`]: l.v0, [`${comp.atual} (US$ FOB)`]: l.v1, [`${comp.atual} (kg)`]: l.q1, 'Participação (%)': l.part, 'Variação (%)': l.varPct })) }] : []),
+        ...(cal ? [{ name: 'Calendário mensal', rows: cal.anos.map((a, i) => Object.fromEntries([['Ano', a], ...['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'].map((m, j) => [m, cal.valores[i][j]])])) }] : []),
         { name: 'Soma período (12m)', rows: twelveRows.map(b => ({ 'Período': b.periodo, 'Data de Início': b.dataInicio, 'Data Final': b.dataFinal, 'Importação KG': b.importacaoKg })) },
         { name: 'Comparações 12m', rows: (twelveMonth?.comparisons ?? []).map(c => ({ 'Comparação': c.comparacao, 'Resultado': c.resultado })) },
         ...countryPeriods.flatMap(cp => [
@@ -528,6 +588,11 @@ const App: React.FC = () => {
           : { id: 'monthly48', heading, kind: 'yearCompare', years: monthByYear.years, data: monthByYear.data, unit: metricUnit(monthMetric, ncmDetails?.unit), partialYears: monthPartialYears,
               source: `${SOURCE_COMEX} * ano incompleto na janela de 48 meses.` });
       }
+      if (cal) {
+        list.push({ id: 'calendario', kind: 'calendario', cal, unit: metricUnit(monthMetric, ncmDetails?.unit), w: 960, h: Math.round(26 + cal.anos.length * 30 + 46),
+          heading: `Gráfico - Calendário mensal das importações (${metricShort(monthMetric, ncmDetails?.unit)}) da ${ncmStr}, 2019–${Y}`,
+          source: `${SOURCE_COMEX} Contorno escuro: mês acima da média + 2 desvios-padrão do período.` });
+      }
     }
     if (sectionVisibility.showAnnualCharts) {
       list.push({ id: 'balance', heading: `Gráfico - Exportação, Importação e Balança Comercial (${ncmStr})`, kind: 'balance', data: balanceData });
@@ -564,10 +629,47 @@ const App: React.FC = () => {
           });
         });
       }
+      if (comp && countryYears && bolhas.pontos.length) {
+        const src = `${SOURCE_COMEX} Períodos comparados: ${comp.anterior} e ${comp.atual}.`;
+        list.push(
+          { id: 'bolhas', kind: 'bolhas', pontos: bolhas.pontos, precoMedio: bolhas.precoMedio1, rotulo0: comp.anterior, rotulo1: comp.atual, h: 520, source: src,
+            heading: `Gráfico - Preço × volume das importações por país de origem, ${comp.anterior} → ${comp.atual} (${ncmStr})` },
+          { id: 'cascata', kind: 'cascata', rows: cascata, h: 440, source: src,
+            heading: `Gráfico - Decomposição da variação do valor importado (US$ FOB) por país, ${comp.anterior} → ${comp.atual} (${ncmStr})` },
+          { id: 'efeitos', kind: 'efeitos', linhas: decomp.linhas, h: Math.max(260, 60 + decomp.linhas.length * 34), source: src,
+            heading: `Gráfico - Efeito quantidade × efeito preço por país, ${comp.anterior} → ${comp.atual} (${ncmStr})`,
+            tableAfter: {
+              heading: 'Decomposição da variação por país (US$ FOB)', source: src,
+              columns: ['País', comp.anterior, comp.atual, 'Variação', 'Efeito quantidade', 'Efeito preço'],
+              rows: decomp.linhas.map(l => [l.pais, formatIntegerPtBR(l.v0), formatIntegerPtBR(l.v1), formatIntegerPtBR(l.delta), formatIntegerPtBR(l.efeitoQuantidade), formatIntegerPtBR(l.efeitoPreco)]),
+            } },
+        );
+      }
+      if (conc.length) {
+        const m = metricShort(shareMetric, ncmDetails?.unit);
+        const src = `${SOURCE_COMEX}${partialFootnote ? ` ${partialFootnote}` : ''}`;
+        list.push(
+          { id: 'concentracao', kind: 'concentracao', data: conc, source: src, heading: `Gráfico - Concentração da origem das importações: maior fornecedor e 3 maiores (${m}) (${ncmStr})` },
+          { id: 'hhi', kind: 'hhi', data: conc, source: src, heading: `Gráfico - Índice de concentração (HHI) da origem das importações (${m}) (${ncmStr})` },
+        );
+      }
+    }
+    if (sectionVisibility.showUfData && ufs && comp && ufs.linhas.some(l => l.v1 > 0)) {
+      const src = `${SOURCE_COMEX} UF do domicílio fiscal do importador. Mapa: @svg-maps/brazil (CC BY 4.0).`;
+      list.push(
+        { id: 'mapaUf', kind: 'mapaUf', linhas: ufs.linhas, w: 620, h: 690, source: src, heading: `Mapa - Participação das UFs nas importações (US$ FOB), ${comp.atual} (${ncmStr})` },
+        { id: 'rankingUf', kind: 'rankingUf', linhas: ufs.linhas, h: Math.max(280, 40 + Math.min(10, ufs.linhas.length) * 34), source: `${SOURCE_COMEX} Entre parênteses, variação sobre ${comp.anterior}.`,
+          heading: `Gráfico - 10 maiores UFs importadoras (US$ FOB), ${comp.atual} (${ncmStr})` },
+      );
+    }
+    if (pen.length) {
+      list.push({ id: 'penetracao', kind: 'penetracao', data: pen, grupo: 'nfe', source: SOURCE_NFE,
+        heading: `Gráfico - Penetração das importações no consumo nacional aparente (kg) (${ncmStr})` });
     }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ncmCode, annualRows, rollingChartData, countryPeriods, sectionVisibility, Y, M, priceData, priceCountry, monthPoints, monthMode, monthMetric, countryMetric, shareImp, shareExp, shareMetric, shareColors]);
+  }, [ncmCode, annualRows, rollingChartData, countryPeriods, sectionVisibility, Y, M, priceData, priceCountry, monthPoints, monthMode, monthMetric, countryMetric, shareImp, shareExp, shareMetric, shareColors,
+    cal, comp, countryYears, bolhas, cascata, decomp, conc, ufs, pen]);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
   const [renderOffscreen, setRenderOffscreen] = useState(false);
@@ -663,7 +765,7 @@ const App: React.FC = () => {
         source: 'Fonte: Elaboração própria a partir dos dados de Comex Stat.',
       } });
     }
-    reportCharts.forEach(spec => {
+    reportCharts.filter(spec => spec.grupo !== 'nfe').forEach(spec => {
       const img = images[spec.id];
       if (img) items.push({ type: 'image', image: { heading: spec.heading, source: spec.source, ...img } });
       if (img && spec.tableAfter) items.push({ type: 'table', table: spec.tableAfter });
@@ -674,6 +776,10 @@ const App: React.FC = () => {
         items.push({ type: 'text', text: 'Planilha de NF-e não carregada: vendas da indústria nacional e consumo nacional aparente não incluídos.', italic: true });
       } else {
         items.push({ type: 'table', table: { heading: 'Vendas da Indústria Nacional', columns: nfeSalesColumns.map(c => c.header), rows: nfeSalesTable.map(r => nfeSalesColumns.map(c => (r as any)[c.key] ?? '')), source: SOURCE_NFE, emptyMessage: 'Não foram encontrados dados da Nota Fiscal Eletrônica para esta NCM.' } });
+        reportCharts.filter(spec => spec.grupo === 'nfe').forEach(spec => {
+          const img = images[spec.id];
+          if (img) items.push({ type: 'image', image: { heading: spec.heading, source: spec.source, ...img } });
+        });
         items.push({ type: 'table', table: { heading: 'Consumo Nacional Aparente', columns: nfeCnaColumns.map(c => c.header), rows: nfeCnaTable.map(r => nfeCnaColumns.map(c => (r as any)[c.key] ?? '')), source: SOURCE_NFE, emptyMessage: 'Não foram encontrados dados da Nota Fiscal Eletrônica para esta NCM.' } });
       }
     }
@@ -701,7 +807,9 @@ const App: React.FC = () => {
     { id: 'doze-meses', label: '12 meses', show: sectionVisibility.showRollingSumImportChart },
     { id: 'surto', label: 'Surto', show: sectionVisibility.showSurgeAnalysis },
     { id: 'paises', label: 'Países', show: sectionVisibility.showCountryData },
+    { id: 'origem-preco', label: 'Preço × volume', show: sectionVisibility.showCountryData },
     { id: 'evolucao-paises', label: 'Evolução por país', show: sectionVisibility.showCountryData },
+    { id: 'uf', label: 'UFs', show: sectionVisibility.showUfData },
     { id: 'planilhas', label: 'Contatos e NF-e', show: sectionVisibility.showExcelAnalysis },
   ].filter(n => n.show);
 
@@ -914,6 +1022,14 @@ const App: React.FC = () => {
                           : <YearCompareChart years={monthByYear.years} data={monthByYear.data} unit={metricUnit(monthMetric, ncmDetails?.unit)} partialYears={monthPartialYears} />}
                       </ChartCard>
                     </div>
+                    {cal && (
+                      <div className="lg:col-span-3">
+                        <ChartCard title={`Calendário das importações, mês a mês · ${metricShort(monthMetric, ncmDetails?.unit)}`}
+                          subtitle="Cores mais escuras = meses com mais importação. Contorno escuro = mês atípico. A métrica segue a escolhida no gráfico acima.">
+                          <CalendarioHeatmap cal={cal} unit={metricUnit(monthMetric, ncmDetails?.unit)} />
+                        </ChartCard>
+                      </div>
+                    )}
                   </div>
                 ) : steps.find(st => st.key === 'monthly')?.status === 'running' ? (
                   <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Carregando dados mensais…</p>
@@ -960,6 +1076,41 @@ const App: React.FC = () => {
               </Section>
             )}
 
+            {/* Preço × volume e decomposição da variação por país */}
+            {sectionVisibility.showCountryData && comp && (
+              <Section
+                id="origem-preco"
+                title="Preço, volume e variação das importações por origem"
+                description="Quem cresce, a que preço, e quem explica a variação do valor importado entre dois períodos iguais."
+                actions={<ComparacaoSelector />}
+              >
+                {!countryYears ? (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">{steps.find(st => st.key === 'country')?.status === 'error' ? 'Não foi possível carregar os dados por país.' : 'Carregando dados por país…'}</p>
+                ) : (
+                  <div className="space-y-4">
+                    <ChartCard title={`Preço × volume das importações por país de origem (${comp.anterior} → ${comp.atual})`}
+                      subtitle={`Círculo tracejado = ${comp.anterior}; círculo cheio = ${comp.atual}; a seta mostra o deslocamento. Tamanho = valor importado (US$ FOB). Os ${bolhas.pontos.length} maiores países${bolhas.outros ? `; outros ${bolhas.outros} não aparecem` : ''}.`}>
+                      <PrecoVolumeChart pontos={bolhas.pontos} precoMedio={bolhas.precoMedio1} rotulo0={comp.anterior} rotulo1={comp.atual} />
+                    </ChartCard>
+                    <div className="grid gap-4 lg:grid-cols-5">
+                      <div className="lg:col-span-3">
+                        <ChartCard title={`De onde veio a variação do valor importado (US$ FOB), ${comp.anterior} → ${comp.atual}`}
+                          subtitle={`Total: US$ ${formatCompactPtBR(decomp.total0)} → US$ ${formatCompactPtBR(decomp.total1)}. Laranja = país que vendeu mais ao Brasil; verde = país que vendeu menos. Passe o mouse para ver o efeito quantidade e o efeito preço.`}>
+                          <CascataChart rows={cascata} />
+                        </ChartCard>
+                      </div>
+                      <div className="lg:col-span-2">
+                        <ChartCard title="Efeito quantidade × efeito preço, por país"
+                          subtitle="Quantidade = variação do volume ao preço anterior; preço = variação do preço sobre o volume atual. A soma é a variação total.">
+                          <EfeitosChart linhas={decomp.linhas} />
+                        </ChartCard>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Section>
+            )}
+
             {/* Evolução da origem e do destino (colunas empilhadas a 100%) */}
             {sectionVisibility.showCountryData && (
               <Section
@@ -991,6 +1142,45 @@ const App: React.FC = () => {
                           source={`${SOURCE_COMEX}${partialFootnote ? ` ${partialFootnote}` : ''}`} />
                       );
                     })}
+                    {conc.length > 0 && (
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <ChartCard title={`Concentração da origem das importações (${metricShort(shareMetric, ncmDetails?.unit)})`}
+                          subtitle="Participação do maior fornecedor e dos 3 maiores em cada ano. O nome aparece quando o maior fornecedor muda." legend={partialFootnote || undefined}>
+                          <ConcentracaoChart data={conc} />
+                        </ChartCard>
+                        <ChartCard title="Índice de concentração (HHI) das importações"
+                          subtitle={`Soma dos quadrados das participações (0 a 10.000). Último ano: ${formatIntegerPtBR(conc[conc.length - 1].hhi)}, concentração ${faixaHhi(conc[conc.length - 1].hhi)}.`} legend={partialFootnote || undefined}>
+                          <HhiChart data={conc} />
+                        </ChartCard>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Section>
+            )}
+
+            {/* Importações por UF */}
+            {sectionVisibility.showUfData && comp && (
+              <Section
+                id="uf"
+                title="Importações por UF de destino"
+                description="UF do domicílio fiscal da empresa importadora, conforme o Comex Stat (detalhamento “UF do produto”). US$ FOB."
+                actions={<ComparacaoSelector />}
+              >
+                {!ufs ? (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">{steps.find(st => st.key === 'uf')?.status === 'error' ? 'Não foi possível carregar as importações por UF.' : 'Carregando importações por UF…'}</p>
+                ) : !ufs.linhas.some(l => l.v1 > 0) ? (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Sem importações em {comp.atual}.</p>
+                ) : (
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <ChartCard title={`Participação de cada UF nas importações · ${comp.atual}`} subtitle="Passe o mouse sobre o estado para ver o valor e a variação.">
+                      <MapaUf linhas={ufs.linhas} />
+                      <p className="mt-1 text-[10.5px] text-slate-400">Mapa: @svg-maps/brazil (CC BY 4.0).</p>
+                    </ChartCard>
+                    <ChartCard title={`10 maiores UFs importadoras · ${comp.atual}`} subtitle={`Participação no total e, entre parênteses, a variação sobre ${comp.anterior}.`}>
+                      <RankingUfChart linhas={ufs.linhas} />
+                      {ufs.naoIdentificado > 0 && <p className="mt-2 text-[11px] text-slate-500">US$ {formatCompactPtBR(ufs.naoIdentificado)} sem UF identificada no mapa (ex.: “Não declarada”).</p>}
+                    </ChartCard>
                   </div>
                 )}
               </Section>
@@ -1015,6 +1205,10 @@ const App: React.FC = () => {
             {nfeAll && (
               nfeForNcm.length ? (
                 <>
+                  <ChartCard source={SOURCE_NFE} title={`Penetração das importações no consumo nacional aparente · ${ncmStr}`}
+                    subtitle="Consumo aparente = vendas internas da indústria + importações (kg). O rótulo mostra a parcela das importações. Dados de NF-e lidos só no seu navegador.">
+                    <PenetracaoChart data={pen} />
+                  </ChartCard>
                   <DataTable title={`Vendas da indústria nacional · ${ncmStr}`} data={nfeSalesTable} columns={nfeSalesColumns} source={SOURCE_NFE} />
                   <DataTable title={`Consumo nacional aparente · ${ncmStr}`} data={nfeCnaTable} columns={nfeCnaColumns} source={SOURCE_NFE} />
                   <Section title="Dados completos de NF-e" defaultOpen={false}>

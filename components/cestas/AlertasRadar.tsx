@@ -6,6 +6,8 @@ import { parseNfeExcel } from '../../services/excelService.ts';
 import { formatCompactPtBR, formatDecimalPtBR, formatNcmCode, getMonthNamePtBR } from '../../utils/formatting.ts';
 import { downloadWorkbook } from '../../services/excelService.ts';
 import { Button, Icons } from '../ui.tsx';
+import { QuadranteChart } from '../charts/AnaliticasKit.tsx';
+import { pontosQuadrante, LIM_X, LIM_Y } from '../../utils/analiticas.ts';
 
 const NIVEL: Record<Nivel, { rotulo: string; cor: string; fundo: string; borda: string; ponto: string }> = {
   alto: { rotulo: 'Alto', cor: 'text-red-700', fundo: 'bg-red-50', borda: 'border-l-red-500', ponto: 'bg-red-500' },
@@ -34,6 +36,7 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
   const [abrirCriterios, setAbrirCriterios] = useState(false);
   const [ordem, setOrdem] = useState<'gravidade' | 'impacto'>('gravidade');
   const [mercado, setMercado] = useState(lerMercado);
+  const [verQuadrante, setVerQuadrante] = useState(true);
   const [lendoNfe, setLendoNfe] = useState(false);
   const nfeInput = useRef<HTMLInputElement>(null);
   const carregarNfe = async (f: File) => {
@@ -72,6 +75,8 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
   const lista = noEscopo.filter(a =>
     niveis.has(a.nivel) &&
     (!tipos.size || a.sinais.some(s => tipos.has(s.tipo))));
+
+  const quadrante = useMemo(() => pontosQuadrante(lista), [lista]);
 
   const alternar = <T,>(set: Set<T>, v: T, fn: (s: Set<T>) => void) => { const n = new Set(set); n.has(v) ? n.delete(v) : n.add(v); fn(n); };
 
@@ -156,6 +161,28 @@ const AlertasRadar: React.FC<Props> = ({ manifest, entidadeInicial, onOpenNcm })
           )}
           {abrirCriterios && <PainelCriterios criterios={criterios} onChange={setCriterios} />}
           {recalculando && <p className="mt-3 text-sm text-slate-500">Recalculando com os novos critérios…</p>}
+
+          {/* Quadrante de triagem */}
+          {lista.length > 0 && (
+            <div className="mt-4 rounded-xl border border-slate-200">
+              <button onClick={() => setVerQuadrante(!verQuadrante)} className="flex w-full items-center justify-between px-4 py-3 text-left">
+                <span>
+                  <span className="block text-sm font-semibold text-slate-800">Quadrante de triagem</span>
+                  <span className="block text-xs text-slate-500">Cada bolha é uma NCM com alerta (filtros acima). Tamanho = peso na cesta. Clique numa bolha para abrir a ficha.</span>
+                </span>
+                <span className="text-xs text-brand-600">{verQuadrante ? 'Ocultar' : 'Mostrar'}</span>
+              </button>
+              {verQuadrante && (
+                <div className="px-3 pb-3">
+                  <QuadranteChart pontos={quadrante.pontos} onOpen={onOpenNcm} />
+                  <p className="px-1 text-[11px] text-slate-500">
+                    Variações acima de +{LIM_X}% no volume (ou fluxos novos) e de ±{LIM_Y}% no preço aparecem na borda do gráfico; o valor exato está no detalhe ao passar o mouse.
+                    {quadrante.semImportacao > 0 && ` ${quadrante.semImportacao} alerta(s) só de exportação não aparecem.`}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Cartões */}
           {lista.length === 0 ? (
