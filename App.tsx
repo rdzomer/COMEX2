@@ -6,15 +6,15 @@ import ContactCards from './components/ContactCards.tsx';
 import Section from './components/Section.tsx';
 import SurgeAnalysisConfigurator from './components/SurgeAnalysisConfigurator.tsx';
 import SurgeAnalysisDisplay from './components/SurgeAnalysisDisplay.tsx';
-import { ChartCard, KpiCard, Button, SegmentedControl, SectionPicker, Swatch, Icons } from './components/ui.tsx';
-import { AnnualBarChart, PriceLineChart, TradeBalanceChart, RollingSumChart, CountryTreemap, COLORS } from './components/charts/ChartKit.tsx';
+import { ChartCard, KpiCard, Button, SegmentedControl, SectionPicker, Swatch, Icons, MetricSelector, CountryPicker } from './components/ui.tsx';
+import { AnnualBarChart, PriceLineChart, PricePoint, TradeBalanceChart, RollingSumChart, CountryTreemap, ShareStackedChart, MonthlyImportsChart, YearCompareChart, COLORS } from './components/charts/ChartKit.tsx';
 import CestasView from './components/cestas/CestasView.tsx';
 import { AlertasPage } from './components/cestas/AlertasRadar.tsx';
 import MetodologiaAlertas from './components/cestas/MetodologiaAlertas.tsx';
 import { mercadoDaNfe, salvarMercado } from './utils/mercado.ts';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
 
-import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryData } from './services/comexApiService.ts';
+import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryYearData } from './services/comexApiService.ts';
 import { parseCgimDinteExcelForFiltering, parseNfeExcel, downloadWorkbook } from './services/excelService.ts';
 import {
   processAnnualTradeData, sortAnnualRows, createYearSummary, buildMonthlySeries, buildTwelveMonthSummary,
@@ -23,8 +23,12 @@ import {
 import { formatIntegerPtBR, formatDecimalPtBR, formatNcmCode, formatPercentagePtBR, getMonthNamePtBR, pad2 } from './utils/formatting.ts';
 import { elementToPng } from './utils/chartToImage.ts';
 import {
+  Metric, unitName, isKgUnit, metricShort, metricUnit, KG_UNIT_NOTE, countriesForYears, shareKey, tradingCountries,
+  countryYearPrice, shareEvolution, countryColors, monthlyWindow, byYearLines, OTHERS,
+} from './utils/fichaExtras.ts';
+import {
   LastUpdateData, NcmDetails, ProcessedTradeData, ApiFilter, Period, CountryPeriodData, CgimNcmInfo,
-  EntityContactInfo, NfeData, SectionVisibility, MonthlyComexStatRecord, SurgeAnalysisConfig, SurgeAnalysisResult,
+  EntityContactInfo, NfeData, SectionVisibility, MonthlyComexStatRecord, SurgeAnalysisConfig, SurgeAnalysisResult, CountryYearRecord,
 } from './types.ts';
 
 const initialSectionVisibility: SectionVisibility = {
@@ -70,6 +74,8 @@ const App: React.FC = () => {
   const [annualRows, setAnnualRows] = useState<ProcessedTradeData[]>([]);
   const [rawMonthlyImportData, setRawMonthlyImportData] = useState<MonthlyComexStatRecord[]>([]);
   const [countryPeriods, setCountryPeriods] = useState<CountryPeriodData[]>([]);
+  // País × ano (desde 2010), consultado uma vez por NCM e reaproveitado pelos seletores
+  const [countryYears, setCountryYears] = useState<{ imp: CountryYearRecord[]; exp: CountryYearRecord[]; impPrev: CountryYearRecord[]; expPrev: CountryYearRecord[] } | null>(null);
 
   const [cgimFile, setCgimFile] = useState<File | null>(null);
   const [nfeFile, setNfeFile] = useState<File | null>(null);
@@ -80,7 +86,11 @@ const App: React.FC = () => {
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(initialSectionVisibility);
   const [surgeAnalysisResult, setSurgeAnalysisResult] = useState<SurgeAnalysisResult | null>(null);
   const [countryPeriodIdx, setCountryPeriodIdx] = useState<'0' | '1'>('1');
-  const [countryMetric, setCountryMetric] = useState<'metricFOB' | 'metricKG'>('metricFOB');
+  const [countryMetric, setCountryMetric] = useState<Metric>('metricFOB');
+  const [priceCountry, setPriceCountry] = useState<string | null>(null);
+  const [shareMetric, setShareMetric] = useState<Metric>('metricFOB');
+  const [monthMetric, setMonthMetric] = useState<Metric>('metricKG');
+  const [monthMode, setMonthMode] = useState<'serie' | 'anos'>('serie');
   const [exportingWord, setExportingWord] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -102,12 +112,14 @@ const App: React.FC = () => {
     setAnnualRows([]);
     setRawMonthlyImportData([]);
     setCountryPeriods([]);
+    setCountryYears(null);
+    setPriceCountry(null);
     setSurgeAnalysisResult(null);
     setSteps([
       { key: 'basic', label: 'Descrição, unidade e data de atualização', status: 'running' },
       { key: 'annual', label: 'Séries anuais desde 2004', status: 'pending' },
       { key: 'monthly', label: 'Importações mensais desde 2019', status: 'pending' },
-      { key: 'country', label: 'Dados por país', status: 'pending' },
+      { key: 'country', label: 'Dados por país e ano desde 2010', status: 'pending' },
     ]);
     const fail = (key: string, msg: string, e: unknown) => {
       console.error(msg, e);
@@ -158,7 +170,7 @@ const App: React.FC = () => {
     const monthly = (async () => {
       setStep('monthly', 'running');
       try {
-        const data = await fetchMonthlyComexData('import', { from: '2019-01', to: `${Y}-${MM}` }, filters, ['metricFOB', 'metricKG']);
+        const data = await fetchMonthlyComexData('import', { from: '2019-01', to: `${Y}-${MM}` }, filters, ['metricFOB', 'metricKG', 'metricStatistic']);
         if (!alive()) return;
         setRawMonthlyImportData(data);
         setStep('monthly', 'done');
@@ -168,18 +180,21 @@ const App: React.FC = () => {
     const countries = (async () => {
       setStep('country', 'running');
       try {
-        const prevPeriod: Period = { from: `${Y - 1}-01`, to: `${Y - 1}-12` };
-        const ytdPeriod: Period = { from: `${Y}-01`, to: `${Y}-${MM}` };
-        const [pe, pi, ye, yi] = await Promise.all([
-          fetchCountryData(code, 'export', prevPeriod),
-          fetchCountryData(code, 'import', prevPeriod),
-          fetchCountryData(code, 'export', ytdPeriod),
-          fetchCountryData(code, 'import', ytdPeriod),
+        // Uma consulta por fluxo traz país × ano desde 2010 (anos completos até dezembro; o ano corrente até o último mês).
+        // Com o ano incompleto, o mesmo período do ano anterior por país completa a série de preços por país.
+        const allYears: Period = { from: '2010-01', to: `${Y}-12` };
+        const prevYtd: Period = { from: `${Y - 1}-01`, to: `${Y - 1}-${MM}` };
+        const [ex, im, exPrev, imPrev] = await Promise.all([
+          fetchCountryYearData(code, 'export', allYears),
+          fetchCountryYearData(code, 'import', allYears),
+          M < 12 ? fetchCountryYearData(code, 'export', prevYtd) : Promise.resolve([]),
+          M < 12 ? fetchCountryYearData(code, 'import', prevYtd) : Promise.resolve([]),
         ]);
         if (!alive()) return;
+        setCountryYears({ imp: im, exp: ex, impPrev: imPrev, expPrev: exPrev });
         setCountryPeriods([
-          { label: String(Y - 1), period: prevPeriod, exports: pe, imports: pi },
-          { label: M < 12 ? `${Y} (até ${getMonthNamePtBR(M)})` : String(Y), period: ytdPeriod, exports: ye, imports: yi },
+          { label: String(Y - 1), period: { from: `${Y - 1}-01`, to: `${Y - 1}-12` }, exports: countriesForYears(ex, [Y - 1]), imports: countriesForYears(im, [Y - 1]) },
+          { label: M < 12 ? `${Y} (até ${getMonthNamePtBR(M)})` : String(Y), period: { from: `${Y}-01`, to: `${Y}-${MM}` }, exports: countriesForYears(ex, [Y]), imports: countriesForYears(im, [Y]) },
         ]);
         setStep('country', 'done');
       } catch (e) { fail('country', 'Falha ao carregar os dados por país.', e); }
@@ -273,7 +288,35 @@ const App: React.FC = () => {
 
   const since2010 = annualRows.filter(r => (r.yearNumeric ?? 0) >= 2010);
   const barData = (key: keyof ProcessedTradeData) => since2010.map(r => ({ name: r.year, value: (r[key] as number) || 0, kind: r.kind }));
-  const priceData = since2010.map(r => ({ name: r.year, imp: r['Preço Médio Importação (US$/KG)'] ?? null, exp: r['Preço Médio Exportação (US$/KG)'] ?? null }));
+  const priceData: PricePoint[] = useMemo(() => since2010.map(r => {
+    const p: PricePoint = {
+      name: r.year, imp: r['Preço Médio Importação (US$/KG)'] ?? null, exp: r['Preço Médio Exportação (US$/KG)'] ?? null,
+      impKg: r['Importações (KG)'] || 0, expKg: r['Exportações (KG)'] || 0,
+    };
+    if (priceCountry && countryYears && r.yearNumeric) {
+      const prev = r.kind === 'prevYtd';
+      const ci = countryYearPrice(prev ? countryYears.impPrev : countryYears.imp, priceCountry, r.yearNumeric);
+      const ce = countryYearPrice(prev ? countryYears.expPrev : countryYears.exp, priceCountry, r.yearNumeric);
+      Object.assign(p, { impC: ci.price, impCKg: ci.kg, expC: ce.price, expCKg: ce.kg });
+    }
+    return p;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [annualRows, priceCountry, countryYears]);
+  const priceCountries = useMemo(() => countryYears ? tradingCountries(countryYears.imp, countryYears.exp, 2010) : [], [countryYears]);
+
+  // Unidade estatística (lida dos dados) e visões por país / mensais
+  const uName = unitName(ncmDetails?.unit);
+  const kgUnit = isKgUnit(ncmDetails?.unit);
+  const SHARE_FROM = 2020;
+  const shareImp = useMemo(() => countryYears && Y ? shareEvolution(countryYears.imp, shareMetric, SHARE_FROM, Y, partialYear) : null, [countryYears, shareMetric, Y, partialYear]);
+  const shareExp = useMemo(() => countryYears && Y ? shareEvolution(countryYears.exp, shareMetric, SHARE_FROM, Y, partialYear) : null, [countryYears, shareMetric, Y, partialYear]);
+  const shareColors = useMemo(() => countryColors(shareImp?.countries ?? [], shareExp?.countries ?? []), [shareImp, shareExp]);
+  const monthPoints = useMemo(() => Y && M && rawMonthlyImportData.length ? monthlyWindow(rawMonthlyImportData, monthMetric, Y, M) : [], [rawMonthlyImportData, monthMetric, Y, M]);
+  const monthByYear = useMemo(() => byYearLines(monthPoints), [monthPoints]);
+  const monthPartialYears = useMemo(() => monthByYear.years.filter(y => monthPoints.filter(p => p.year === y).length < 12), [monthByYear, monthPoints]);
+  const monthTitle = `Evolução mensal das importações (últimos 48 meses)`;
+  const monthRange = monthPoints.length ? `${monthPoints[0].name} a ${monthPoints[monthPoints.length - 1].name}` : '';
+  const partialFootnote = partialYear && M ? `* até o mês ${M} (${getMonthNamePtBR(M)})` : '';
   const balanceData = annualRows.filter(r => r.kind !== 'prevYtd').map(r => ({
     name: r.year, exp: r['Exportações (US$ FOB)'] || 0, impNeg: -(r['Importações (US$ FOB)'] || 0), balance: r['Balança Comercial (FOB)'] || 0,
   }));
@@ -379,19 +422,30 @@ const App: React.FC = () => {
     ]));
   };
 
+  // Tabela por país: a métrica escolhida e sua participação primeiro; as outras duas métricas como referência
+  const METRIC_HEAD: Record<Metric, string> = { metricFOB: 'US$ FOB', metricKG: 'kg líquido', metricStatistic: `Qtd. estatística (${uName})` };
   const countryColumns: Column[] = [
     { key: 'country', header: 'País', LTR: true },
-    { key: 'metricFOB', header: 'US$ FOB' },
-    { key: 'representatividadeFOB', header: 'Part. FOB' },
-    { key: 'metricKG', header: 'kg' },
-    { key: 'representatividadeKG', header: 'Part. kg' },
+    { key: countryMetric, header: METRIC_HEAD[countryMetric] },
+    { key: shareKey(countryMetric), header: 'Participação' },
+    ...(['metricFOB', 'metricKG', 'metricStatistic'] as Metric[]).filter(m => m !== countryMetric).map(m => ({ key: m, header: METRIC_HEAD[m] })),
   ];
+  const pct1 = (v: number | null | undefined) => (typeof v === 'number' ? `${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)}%` : '–');
   const countryFormatters = {
     metricFOB: formatIntegerPtBR,
     metricKG: formatIntegerPtBR,
-    representatividadeFOB: (v: number) => `${formatDecimalPtBR(v)}%`,
-    representatividadeKG: (v: number) => `${formatDecimalPtBR(v)}%`,
+    metricStatistic: formatIntegerPtBR,
+    representatividadeFOB: pct1,
+    representatividadeKG: pct1,
+    representatividadeStat: pct1,
   };
+  const sortByMetric = (rows: CountryPeriodData['imports']) => [...rows].filter(r => (r[countryMetric] ?? 0) > 0).sort((a, b) => (b[countryMetric] ?? 0) - (a[countryMetric] ?? 0));
+
+  // Alteração 3: tabela país × ano com as participações
+  const shareTable = (evo: NonNullable<typeof shareImp>) => ({
+    columns: ['País', ...evo.years.map(y => y.name)],
+    rows: evo.countries.map(c => [c, ...evo.years.map(y => (y.empty ? 'sem registro' : pct1(y[c] as number)))]),
+  });
 
   const twelveRows = twelveMonth?.blocks ?? [];
   const cgimColumns: Column[] = ['Departamento Responsável', 'Coordenação-Geral Responsável', 'Agrupamento', 'Setores', 'Subsetores', 'Produtos'].map(k => ({ key: k, header: k, LTR: true }));
@@ -426,11 +480,18 @@ const App: React.FC = () => {
         { name: 'Resumo Importações', rows: summaryRows(importSummary) },
         { name: 'Resumo Exportações', rows: summaryRows(exportSummary) },
         { name: 'Importações mensais', rows: monthlySeries.map(p => ({ 'Mês': p.yearMonth, 'Importações (KG)': p.metricKG, 'Importações (US$ FOB)': p.metricFOB, 'Soma móvel 12 meses (KG)': p.rollingKG })) },
+        { name: 'Importações 48 meses', rows: monthPoints.map(p => ({ 'Mês': p.name, [`Importações (${metricShort(monthMetric, ncmDetails?.unit)})`]: p.value, 'Mesmo mês do ano anterior': p.prevYear, 'Variação (%)': p.yoy === null ? null : p.yoy / 100 })) },
+        ...(countryYears ? [
+          { name: 'Países por ano', rows: [
+            ...countryYears.imp.map(r => ({ 'Fluxo': 'Importação', 'Ano': r.year, 'País': r.country, 'US$ FOB': r.metricFOB, 'KG líquido': r.metricKG, [`Qtd. estatística (${uName})`]: r.metricStatistic })),
+            ...countryYears.exp.map(r => ({ 'Fluxo': 'Exportação', 'Ano': r.year, 'País': r.country, 'US$ FOB': r.metricFOB, 'KG líquido': r.metricKG, [`Qtd. estatística (${uName})`]: r.metricStatistic })),
+          ].sort((a, b) => a['Fluxo'].localeCompare(b['Fluxo']) || a['Ano'] - b['Ano'] || b['US$ FOB'] - a['US$ FOB']) },
+        ] : []),
         { name: 'Soma período (12m)', rows: twelveRows.map(b => ({ 'Período': b.periodo, 'Data de Início': b.dataInicio, 'Data Final': b.dataFinal, 'Importação KG': b.importacaoKg })) },
         { name: 'Comparações 12m', rows: (twelveMonth?.comparisons ?? []).map(c => ({ 'Comparação': c.comparacao, 'Resultado': c.resultado })) },
         ...countryPeriods.flatMap(cp => [
-          { name: `Exportações ${cp.label}`, rows: cp.exports.map(r => ({ 'País': r.country, 'US$ FOB': r.metricFOB, 'KG': r.metricKG, 'Representatividade FOB (%)': r.representatividadeFOB, 'Representatividade KG (%)': r.representatividadeKG })) },
-          { name: `Importações ${cp.label}`, rows: cp.imports.map(r => ({ 'País': r.country, 'US$ FOB': r.metricFOB, 'KG': r.metricKG, 'Representatividade FOB (%)': r.representatividadeFOB, 'Representatividade KG (%)': r.representatividadeKG })) },
+          { name: `Exportações ${cp.label}`, rows: cp.exports.map(r => ({ 'País': r.country, 'US$ FOB': r.metricFOB, 'KG': r.metricKG, 'Qtd. estatística': r.metricStatistic, 'Representatividade FOB (%)': r.representatividadeFOB, 'Representatividade KG (%)': r.representatividadeKG, 'Representatividade Qtd. estatística (%)': r.representatividadeStat })) },
+          { name: `Importações ${cp.label}`, rows: cp.imports.map(r => ({ 'País': r.country, 'US$ FOB': r.metricFOB, 'KG': r.metricKG, 'Qtd. estatística': r.metricStatistic, 'Representatividade FOB (%)': r.representatividadeFOB, 'Representatividade KG (%)': r.representatividadeKG, 'Representatividade Qtd. estatística (%)': r.representatividadeStat })) },
         ]),
         ...(cgimInfo ? [{ name: 'CGIM-DINTE', rows: [cgimInfo] }] : []),
         ...(entityContacts.length ? [{ name: 'Entidades', rows: entityContacts }] : []),
@@ -455,11 +516,18 @@ const App: React.FC = () => {
         { id: 'impFob', heading: `Gráfico - Importações (US$ FOB) da ${ncmStr}`, kind: 'bar', flow: 'import', data: barData('Importações (US$ FOB)'), unitLabel: 'Importações (US$ FOB)' },
         { id: 'expKg', heading: `Gráfico - Exportações (KG) da ${ncmStr}`, kind: 'bar', flow: 'export', data: barData('Exportações (KG)'), unitLabel: 'Exportações (kg)' },
         { id: 'expFob', heading: `Gráfico - Exportações (US$ FOB) da ${ncmStr}`, kind: 'bar', flow: 'export', data: barData('Exportações (US$ FOB)'), unitLabel: 'Exportações (US$ FOB)' },
-        { id: 'prices', heading: `Gráfico - Preços Médios de Importação e Exportação (US$ FOB/kg) da ${ncmStr} (${y0}–${Y})`, kind: 'price', data: priceData },
+        { id: 'prices', heading: `Gráfico - Preços Médios de Importação e Exportação (US$ FOB/kg) da ${ncmStr} (${y0}–${Y})${priceCountry ? ` – todos os países e ${priceCountry}` : ' – todos os países'}`, kind: 'price', data: priceData, country: priceCountry },
       );
     }
     if (sectionVisibility.showRollingSumImportChart && rollingChartData.length) {
       list.push({ id: 'rolling', heading: `Gráfico - Importações Acumuladas nos Últimos 12 Meses (em KG) da ${ncmStr}`, kind: 'rolling', data: rollingChartData });
+      if (monthPoints.length) {
+        const heading = `Gráfico - ${monthTitle} (${metricShort(monthMetric, ncmDetails?.unit)}) da ${ncmStr}, ${monthRange}${monthMode === 'anos' ? ' – comparação por ano' : ''}`;
+        list.push(monthMode === 'serie'
+          ? { id: 'monthly48', heading, kind: 'monthly', points: monthPoints, unit: metricUnit(monthMetric, ncmDetails?.unit) }
+          : { id: 'monthly48', heading, kind: 'yearCompare', years: monthByYear.years, data: monthByYear.data, unit: metricUnit(monthMetric, ncmDetails?.unit), partialYears: monthPartialYears,
+              source: `${SOURCE_COMEX} * ano incompleto na janela de 48 meses.` });
+      }
     }
     if (sectionVisibility.showAnnualCharts) {
       list.push({ id: 'balance', heading: `Gráfico - Exportação, Importação e Balança Comercial (${ncmStr})`, kind: 'balance', data: balanceData });
@@ -475,11 +543,31 @@ const App: React.FC = () => {
           { id: `tm-imp-kg-${idx}`, heading: `Treemap - Origem das Importações (KG) ${lbl} (${ncmStr})`, kind: 'treemap', flow: 'import', metric: 'metricKG', countries: cp.imports },
           { id: `tm-exp-kg-${idx}`, heading: `Treemap - Destino das Exportações (KG) ${lbl} (${ncmStr})`, kind: 'treemap', flow: 'export', metric: 'metricKG', countries: cp.exports },
         );
+        // Unidade estatística: entra na ficha quando é a métrica escolhida na tela
+        if (countryMetric === 'metricStatistic') {
+          const u = metricUnit('metricStatistic', ncmDetails?.unit);
+          list.push(
+            { id: `tm-imp-st-${idx}`, heading: `Treemap - Origem das Importações (unidade estatística: ${u}) ${lbl} (${ncmStr})`, kind: 'treemap', flow: 'import', metric: 'metricStatistic', unitLabel: u, countries: cp.imports },
+            { id: `tm-exp-st-${idx}`, heading: `Treemap - Destino das Exportações (unidade estatística: ${u}) ${lbl} (${ncmStr})`, kind: 'treemap', flow: 'export', metric: 'metricStatistic', unitLabel: u, countries: cp.exports },
+          );
+        }
       });
+      if (shareImp && shareExp) {
+        const m = metricShort(shareMetric, ncmDetails?.unit);
+        const src = `${SOURCE_COMEX}${partialFootnote ? ` ${partialFootnote}` : ''}`;
+        ([['import', 'Origem das Importações', 'da origem das importações', shareImp], ['export', 'Destino das Exportações', 'do destino das exportações', shareExp]] as const).forEach(([flow, t, tt, evo]) => {
+          const tb = shareTable(evo);
+          list.push({
+            id: `share-${flow}`, kind: 'share', flow, evo, colors: shareColors, unit: metricUnit(shareMetric, ncmDetails?.unit), source: src,
+            heading: `Gráfico - Evolução ${tt} por país, participação % (${m}), ${SHARE_FROM}–${Y}${partialYear ? '*' : ''} (${ncmStr})`,
+            tableAfter: evo.hasData ? { heading: `${t}: participação por ano (${m})`, columns: tb.columns, rows: tb.rows, source: src } : undefined,
+          });
+        });
+      }
     }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ncmCode, annualRows, rollingChartData, countryPeriods, sectionVisibility, Y, M]);
+  }, [ncmCode, annualRows, rollingChartData, countryPeriods, sectionVisibility, Y, M, priceData, priceCountry, monthPoints, monthMode, monthMetric, countryMetric, shareImp, shareExp, shareMetric, shareColors]);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
   const [renderOffscreen, setRenderOffscreen] = useState(false);
@@ -577,7 +665,8 @@ const App: React.FC = () => {
     }
     reportCharts.forEach(spec => {
       const img = images[spec.id];
-      if (img) items.push({ type: 'image', image: { heading: spec.heading, ...img } });
+      if (img) items.push({ type: 'image', image: { heading: spec.heading, source: spec.source, ...img } });
+      if (img && spec.tableAfter) items.push({ type: 'table', table: spec.tableAfter });
     });
     if (sectionVisibility.showExcelAnalysis) {
       items.push({ type: 'pagebreak' });
@@ -612,6 +701,7 @@ const App: React.FC = () => {
     { id: 'doze-meses', label: '12 meses', show: sectionVisibility.showRollingSumImportChart },
     { id: 'surto', label: 'Surto', show: sectionVisibility.showSurgeAnalysis },
     { id: 'paises', label: 'Países', show: sectionVisibility.showCountryData },
+    { id: 'evolucao-paises', label: 'Evolução por país', show: sectionVisibility.showCountryData },
     { id: 'planilhas', label: 'Contatos e NF-e', show: sectionVisibility.showExcelAnalysis },
   ].filter(n => n.show);
 
@@ -759,7 +849,14 @@ const App: React.FC = () => {
                       <ChartCard title={`Importações (US$ FOB) da ${ncmStr}`} legend={partialNote}><AnnualBarChart data={barData('Importações (US$ FOB)')} flow="import" unitLabel="Importações (US$ FOB)" /></ChartCard>
                       <ChartCard title={`Exportações (kg) da ${ncmStr}`} legend={partialNoteExp}><AnnualBarChart data={barData('Exportações (KG)')} flow="export" unitLabel="Exportações (kg)" /></ChartCard>
                       <ChartCard title={`Exportações (US$ FOB) da ${ncmStr}`} legend={partialNoteExp}><AnnualBarChart data={barData('Exportações (US$ FOB)')} flow="export" unitLabel="Exportações (US$ FOB)" /></ChartCard>
-                      <ChartCard title="Preços médios de importação e exportação (US$ FOB/kg)"><PriceLineChart data={priceData} /></ChartCard>
+                      <ChartCard title="Preços médios de importação e exportação (US$ FOB/kg)" subtitle={priceCountry ? `Linhas cheias: todos os países · tracejadas: ${priceCountry}` : undefined}>
+                        <div className="-mt-1 mb-1 flex justify-end">
+                          {countryYears
+                            ? <CountryPicker countries={priceCountries} value={priceCountry} onChange={setPriceCountry} />
+                            : <span className="text-[11px] text-slate-400">Carregando países…</span>}
+                        </div>
+                        <PriceLineChart data={priceData} country={priceCountry} />
+                      </ChartCard>
                       <ChartCard title="Exportação, importação e balança comercial (US$ FOB)" subtitle="Importações representadas abaixo do zero"><TradeBalanceChart data={balanceData} /></ChartCard>
                     </div>
                   </Section>
@@ -802,6 +899,21 @@ const App: React.FC = () => {
                         formatters={{ resultado: (v: number | null) => <VarCell value={v === null ? null : v * 100} /> }}
                         source="Fonte: Elaboração própria a partir dos dados de Comex Stat." />
                     </div>
+                    <div className="lg:col-span-3">
+                      <ChartCard
+                        title={`${monthTitle} · ${metricShort(monthMetric, ncmDetails?.unit)}`}
+                        subtitle={`${monthRange}. ${monthMode === 'serie' ? 'Linha tracejada = média mensal dos 48 meses.' : 'Uma linha por ano; anos com * estão incompletos na janela.'}`}
+                      >
+                        <div className="-mt-1 mb-2 flex flex-wrap justify-end gap-2">
+                          <SegmentedControl value={monthMode} onChange={setMonthMode} options={[{ value: 'serie', label: 'Série contínua' }, { value: 'anos', label: 'Comparação por ano' }]} />
+                          <MetricSelector value={monthMetric} onChange={setMonthMetric} unitName={uName} />
+                        </div>
+                        {monthMetric === 'metricStatistic' && kgUnit && <p className="mb-2 text-[11px] text-slate-500">{KG_UNIT_NOTE}</p>}
+                        {monthMode === 'serie'
+                          ? <MonthlyImportsChart points={monthPoints} unit={metricUnit(monthMetric, ncmDetails?.unit)} />
+                          : <YearCompareChart years={monthByYear.years} data={monthByYear.data} unit={metricUnit(monthMetric, ncmDetails?.unit)} partialYears={monthPartialYears} />}
+                      </ChartCard>
+                    </div>
                   </div>
                 ) : steps.find(st => st.key === 'monthly')?.status === 'running' ? (
                   <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Carregando dados mensais…</p>
@@ -828,20 +940,59 @@ const App: React.FC = () => {
                 actions={
                   <>
                     <SegmentedControl value={countryPeriodIdx} onChange={setCountryPeriodIdx} options={countryPeriods.map((p, i) => ({ value: String(i) as '0' | '1', label: p.label }))} />
-                    <SegmentedControl value={countryMetric} onChange={setCountryMetric} options={[{ value: 'metricFOB', label: 'US$ FOB' }, { value: 'metricKG', label: 'kg' }]} />
+                    <MetricSelector value={countryMetric} onChange={setCountryMetric} unitName={uName} />
                   </>
                 }
               >
+                {countryMetric === 'metricStatistic' && kgUnit && (
+                  <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">{KG_UNIT_NOTE}</p>
+                )}
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <ChartCard title={`Origem das importações · ${cp.label} (${countryMetric === 'metricFOB' ? 'US$ FOB' : 'kg'})`}>
-                    <CountryTreemap data={cp.imports} flow="import" metric={countryMetric} />
+                  <ChartCard title={`Origem das importações · ${cp.label} (${metricShort(countryMetric, ncmDetails?.unit)})`}>
+                    <CountryTreemap data={cp.imports} flow="import" metric={countryMetric} unitLabel={metricUnit(countryMetric, ncmDetails?.unit)} />
                   </ChartCard>
-                  <ChartCard title={`Destino das exportações · ${cp.label} (${countryMetric === 'metricFOB' ? 'US$ FOB' : 'kg'})`}>
-                    <CountryTreemap data={cp.exports} flow="export" metric={countryMetric} />
+                  <ChartCard title={`Destino das exportações · ${cp.label} (${metricShort(countryMetric, ncmDetails?.unit)})`}>
+                    <CountryTreemap data={cp.exports} flow="export" metric={countryMetric} unitLabel={metricUnit(countryMetric, ncmDetails?.unit)} />
                   </ChartCard>
-                  <DataTable title={`Importações por país · ${cp.label}`} data={cp.imports} columns={countryColumns} formatters={countryFormatters} source={SOURCE_COMEX} compact />
-                  <DataTable title={`Exportações por país · ${cp.label}`} data={cp.exports} columns={countryColumns} formatters={countryFormatters} source={SOURCE_COMEX} compact />
+                  <DataTable title={`Importações por país · ${cp.label} (${metricShort(countryMetric, ncmDetails?.unit)})`} data={sortByMetric(cp.imports)} columns={countryColumns} formatters={countryFormatters} source={SOURCE_COMEX} compact />
+                  <DataTable title={`Exportações por país · ${cp.label} (${metricShort(countryMetric, ncmDetails?.unit)})`} data={sortByMetric(cp.exports)} columns={countryColumns} formatters={countryFormatters} source={SOURCE_COMEX} compact />
                 </div>
+              </Section>
+            )}
+
+            {/* Evolução da origem e do destino (colunas empilhadas a 100%) */}
+            {sectionVisibility.showCountryData && (
+              <Section
+                id="evolucao-paises"
+                title="Evolução da origem das importações e do destino das exportações"
+                description={`Participação dos 5 maiores países (pelo total acumulado desde ${SHARE_FROM}) em cada ano; os demais somam-se em “${OTHERS}”.`}
+                actions={<MetricSelector value={shareMetric} onChange={setShareMetric} unitName={uName} />}
+              >
+                {shareMetric === 'metricStatistic' && kgUnit && (
+                  <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">{KG_UNIT_NOTE}</p>
+                )}
+                {!shareImp || !shareExp ? (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">{steps.find(st => st.key === 'country')?.status === 'error' ? 'Não foi possível carregar os dados por país.' : 'Carregando dados por país…'}</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {([['import', 'Origem das importações', shareImp], ['export', 'Destino das exportações', shareExp]] as const).map(([flow, title, evo]) => (
+                        <ChartCard key={flow} title={`${title} (${metricShort(shareMetric, ncmDetails?.unit)})`} legend={partialFootnote || undefined}>
+                          <ShareStackedChart evo={evo} colors={shareColors} unit={metricUnit(shareMetric, ncmDetails?.unit)} flow={flow} />
+                        </ChartCard>
+                      ))}
+                    </div>
+                    {([['Origem das importações', shareImp], ['Destino das exportações', shareExp]] as const).filter(([, evo]) => evo.hasData).map(([title, evo]) => {
+                      const tb = shareTable(evo);
+                      return (
+                        <DataTable key={title} title={`${title}: participação por ano (${metricShort(shareMetric, ncmDetails?.unit)})`} compact
+                          data={tb.rows.map(r => Object.fromEntries(tb.columns.map((c, i) => [c, r[i]])))}
+                          columns={tb.columns.map(c => ({ key: c, header: c, LTR: c === 'País' }))}
+                          source={`${SOURCE_COMEX}${partialFootnote ? ` ${partialFootnote}` : ''}`} />
+                      );
+                    })}
+                  </div>
+                )}
               </Section>
             )}
           </>

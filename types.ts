@@ -29,6 +29,7 @@ export interface MonthlyComexStatRecord {
   month: number;
   metricFOB?: number;
   metricKG?: number;
+  metricStatistic?: number;
   [key: string]: any;
 }
 
@@ -78,8 +79,19 @@ export interface CountryDataRecord {
   country: string;
   metricFOB: number;
   metricKG: number;
+  metricStatistic?: number;
   representatividadeFOB?: number;
   representatividadeKG?: number;
+  representatividadeStat?: number;
+}
+
+/** Comércio de uma NCM por país e ano (uma consulta por fluxo, reaproveitada pelos seletores). */
+export interface CountryYearRecord {
+  country: string;
+  year: number;
+  metricFOB: number;
+  metricKG: number;
+  metricStatistic: number;
 }
 
 export interface CountryPeriodData {
