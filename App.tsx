@@ -1089,7 +1089,7 @@ const App: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     <ChartCard title={`Preço × volume das importações por país de origem (${comp.anterior} → ${comp.atual})`}
-                      subtitle={`Círculo tracejado = ${comp.anterior}; círculo cheio = ${comp.atual}; a seta mostra o deslocamento. Tamanho = valor importado (US$ FOB). Os ${bolhas.pontos.length} maiores países${bolhas.outros ? `; outros ${bolhas.outros} não aparecem` : ''}.`}>
+                      subtitle={`Círculo tracejado = ${comp.anterior}; círculo cheio = ${comp.atual}; a seta mostra o deslocamento. Tamanho = valor importado (US$ FOB). Linha tracejada = preço médio de todas as origens em ${comp.atual}${bolhas.precoMedio1 ? ` (US$ ${formatDecimalPtBR(bolhas.precoMedio1)}/kg)` : ''}. Os ${bolhas.pontos.length} maiores países${bolhas.outros ? `; outros ${bolhas.outros} não aparecem` : ''}.`}>
                       <PrecoVolumeChart pontos={bolhas.pontos} precoMedio={bolhas.precoMedio1} rotulo0={comp.anterior} rotulo1={comp.atual} />
                     </ChartCard>
                     <div className="grid gap-4 lg:grid-cols-5">

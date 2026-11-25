@@ -64,8 +64,11 @@ export function PrecoVolumeChart({ pontos, precoMedio, rotulo0, rotulo1, width, 
   if (!atu.length) return <EmptyChart width={width} height={height} message={`Sem importações em ${rotulo1}.`} />;
   const xmin = Math.min(...todos.map(p => p.x)) / 1.8, xmax = Math.max(...todos.map(p => p.x)) * 1.8;
   const ys = [...todos.map(p => p.y), ...(precoMedio ? [precoMedio] : [])];
+  // Preços muito dispersos (ex.: uma origem de nicho a US$ 20/kg e o grosso a US$ 2/kg): eixo em escala logarítmica
+  const logY = Math.max(...ys) / Math.max(1e-9, Math.min(...ys)) > 4;
   const pad = (Math.max(...ys) - Math.min(...ys)) * 0.15 || Math.max(...ys) * 0.1;
-  const ymin = Math.max(0, Math.min(...ys) - pad), ymax = Math.max(...ys) + pad;
+  const ymin = logY ? Math.min(...ys) / 1.4 : Math.max(0, Math.min(...ys) - pad);
+  const ymax = logY ? Math.max(...ys) * 1.4 : Math.max(...ys) + pad;
   const animate = !width;
   const conteudo = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -79,18 +82,19 @@ export function PrecoVolumeChart({ pontos, precoMedio, rotulo0, rotulo1, width, 
   };
   return (
     <Frame width={width} height={height}>
-      <ScatterChart margin={{ top: 16, right: 24, left: 8, bottom: 34 }}>
+      <ScatterChart margin={{ top: 16, right: 92, left: 8, bottom: 34 }}>
         <CartesianGrid stroke={COLORS.grid} />
         <XAxis type="number" dataKey="x" name="Volume" scale="log" domain={[xmin, xmax]} ticks={ticksLog(xmin, xmax)} allowDataOverflow
           tickFormatter={v => peso(v)} tick={AXIS_TICK} tickLine={false} axisLine={{ stroke: COLORS.grid }}
           label={{ value: 'Volume importado (escala logarítmica)', position: 'insideBottom', offset: -22, fontSize: 11, fill: COLORS.axis }} />
-        <YAxis type="number" dataKey="y" name="Preço" domain={[ymin, ymax]} tickFormatter={v => formatDecimalPtBR(v)} tick={AXIS_TICK} tickLine={false} axisLine={false} width={56}
-          label={{ value: 'US$ FOB/kg', angle: -90, position: 'insideLeft', fontSize: 11, fill: COLORS.axis, dy: 30 }} />
+        <YAxis type="number" dataKey="y" name="Preço" domain={[ymin, ymax]} scale={logY ? 'log' : 'auto'} allowDataOverflow
+          ticks={logY ? ticksLog(ymin, ymax) : undefined} tickFormatter={v => formatDecimalPtBR(v)} tick={AXIS_TICK} tickLine={false} axisLine={false} width={56}
+          label={{ value: logY ? 'US$ FOB/kg (escala logarítmica)' : 'US$ FOB/kg', angle: -90, position: 'insideLeft', fontSize: 11, fill: COLORS.axis, dy: logY ? 70 : 30 }} />
         <ZAxis type="number" dataKey="v" range={[50, 1600]} />
         <Tooltip content={conteudo} cursor={{ strokeDasharray: '3 3' }} />
         {precoMedio !== null && (
           <ReferenceLine y={precoMedio} stroke="#334155" strokeDasharray="5 4" strokeWidth={1.5} ifOverflow="extendDomain"
-            label={{ value: `preço médio, todas as origens (${rotulo1}): US$ ${formatDecimalPtBR(precoMedio)}/kg`, position: 'insideBottomRight', fontSize: 11, fill: '#334155' }} />
+            label={{ value: `média ${formatDecimalPtBR(precoMedio)}`, position: 'right', fontSize: 11, fill: '#334155' }} />
         )}
         <Customized component={(cp: any) => <Setas {...cp} pontos={pontos} />} />
         <Scatter name={rotulo0} data={ant} isAnimationActive={animate}
@@ -126,7 +130,7 @@ export function CascataChart({ rows, width, height = 400 }: SizeProps & { rows: 
     const txt = `${v > 0 ? '+' : '−'}${usd(Math.abs(v)).replace('US$ ', '')}`;
     // Rótulo acima da barra; para barras para baixo (ponto final negativo), abaixo
     const abaixo = key === 'total' ? v < 0 : false;
-    const y = abaixo ? p.y + Math.abs(p.height) + 13 : Math.min(p.y, p.y + p.height) - 5;
+    const y = abaixo ? Math.max(p.y, p.y + p.height) + 14 : Math.min(p.y, p.y + p.height) - 5;
     return <text x={p.x + p.width / 2} y={y} textAnchor="middle" fontSize={10.5} fontWeight={600} fill="#334155" fontFamily={FONT}>{txt}</text>;
   };
   return (
