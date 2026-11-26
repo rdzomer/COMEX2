@@ -25,9 +25,10 @@ export interface ReportImage {
 
 export interface ReportBlock { type: 'table'; table: ReportTable }
 export interface ReportImageBlock { type: 'image'; image: ReportImage }
-export interface ReportTextBlock { type: 'text'; text: string; italic?: boolean }
+export interface ReportTextBlock { type: 'text'; text: string; italic?: boolean; bullet?: boolean }
+export interface ReportHeadingBlock { type: 'heading'; text: string }
 export interface ReportPageBreak { type: 'pagebreak' }
-export type ReportItem = ReportBlock | ReportImageBlock | ReportTextBlock | ReportPageBreak;
+export type ReportItem = ReportBlock | ReportImageBlock | ReportTextBlock | ReportPageBreak | ReportHeadingBlock;
 
 const FONT = 'Calibri';
 const border = { style: BorderStyle.SINGLE, size: 4, color: 'A6A6A6' };
@@ -73,8 +74,10 @@ export async function buildWordReport(title: string, subtitle: string, items: Re
   for (const item of items) {
     if (item.type === 'pagebreak') {
       children.push(new Paragraph({ children: [new PageBreak()] }));
+    } else if (item.type === 'heading') {
+      children.push(heading(item.text, HeadingLevel.HEADING_2));
     } else if (item.type === 'text') {
-      children.push(p(item.text, { italic: item.italic }));
+      children.push(p(item.bullet ? `• ${item.text}` : item.text, { italic: item.italic }));
     } else if (item.type === 'table') {
       const t = item.table;
       if (t.heading) children.push(heading(t.heading, HeadingLevel.HEADING_2));
