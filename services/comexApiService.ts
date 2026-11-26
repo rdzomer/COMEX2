@@ -24,12 +24,53 @@ async function withSlot<T>(fn: () => Promise<T>): Promise<T> {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- Detecção rápida de indisponibilidade ---
+// Quando o servidor do MDIC cai, o nginx responde 503 sem cabeçalho CORS e o navegador só vê
+// "Failed to fetch". Nesse caso não adianta esperar 12 s × 4: tenta uma vez mais após 2 s e,
+// se falhar, marca a API como fora do ar por 60 s (as demais consultas falham na hora).
+let apiForaAte = 0;
+export class ApiIndisponivelError extends Error {
+  constructor() { super('A API do Comex Stat está fora do ar no momento.'); this.name = 'ApiIndisponivelError'; }
+}
+export const apiIndisponivel = () => Date.now() < apiForaAte;
+export const reiniciarDisponibilidade = () => { apiForaAte = 0; };
+
+// --- Cache das respostas na sessão: reabrir uma NCM não consulta a API de novo ---
+const memCache = new Map<string, unknown>();
+const CACHE_PREFIX = 'comexstat.cache.v1:';
+function lerCache<T>(key: string): T | undefined {
+  if (memCache.has(key)) return memCache.get(key) as T;
+  try {
+    const raw = sessionStorage.getItem(CACHE_PREFIX + key);
+    if (raw) { const v = JSON.parse(raw) as T; memCache.set(key, v); return v; }
+  } catch { /* sessionStorage indisponível */ }
+  return undefined;
+}
+function gravarCache(key: string, value: unknown) {
+  memCache.set(key, value);
+  try {
+    const raw = JSON.stringify(value);
+    if (raw.length < 1_500_000) sessionStorage.setItem(CACHE_PREFIX + key, raw);
+  } catch { /* cota cheia: fica só na memória */ }
+}
+
 async function fetchWithRetry<T>(url: string, options?: RequestInit): Promise<T> {
+  const key = `${options?.method ?? 'GET'} ${url} ${typeof options?.body === 'string' ? options.body : ''}`;
+  const hit = lerCache<T>(key);
+  if (hit !== undefined) return hit;
+  if (apiIndisponivel()) throw new ApiIndisponivelError();
+
   let lastError: unknown;
+  let falhasDeRede = 0;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    let espera = RETRY_DELAY;
     try {
       const response = await withSlot(() => fetch(url, options));
-      if (response.ok) return (await response.json()) as T;
+      if (response.ok) {
+        const data = (await response.json()) as T;
+        gravarCache(key, data);
+        return data;
+      }
       const errorText = await response.text();
       lastError = new Error(`API ${response.status}: ${errorText.slice(0, 200)}`);
       // 429 (limite) e 5xx são temporários: tenta de novo. Outros erros, desiste.
@@ -37,10 +78,19 @@ async function fetchWithRetry<T>(url: string, options?: RequestInit): Promise<T>
     } catch (error) {
       lastError = error;
       if (error instanceof Error && /^API 4\d\d/.test(error.message) && !error.message.startsWith('API 429')) throw error;
+      if (error instanceof TypeError) {
+        // Falha de rede/CORS: servidor fora do ar
+        falhasDeRede++;
+        if (falhasDeRede >= 2 || apiIndisponivel()) {
+          apiForaAte = Date.now() + 60_000;
+          throw new ApiIndisponivelError();
+        }
+        espera = 2000;
+      }
     }
     if (attempt < MAX_RETRIES) {
-      console.warn(`Tentativa ${attempt}/${MAX_RETRIES} falhou para ${url}. Nova tentativa em ${RETRY_DELAY / 1000}s...`);
-      await sleep(RETRY_DELAY);
+      console.warn(`Tentativa ${attempt}/${MAX_RETRIES} falhou para ${url}. Nova tentativa em ${espera / 1000}s...`);
+      await sleep(espera);
     }
   }
   throw lastError;
@@ -77,14 +127,25 @@ export async function fetchNcmDescription(ncmCode: string): Promise<string | nul
   }
 }
 
-let ncmTableCache: { coNcm: string; unit: string }[] | null = null;
+// A tabela completa de NCMs é grande (~10 mil linhas): guarda só NCM → unidade, por 7 dias, no navegador
+let ncmTableCache: Record<string, string> | null = null;
+const UNIT_KEY = 'comexstat.unidades.v1';
 export async function fetchNcmUnit(ncmCode: string): Promise<string | null> {
   try {
     if (!ncmTableCache) {
-      const response = await fetchWithRetry<{ data: { list: { coNcm: string; unit: string }[] } }>(`${API_BASE_URL}/tables/ncm`);
-      ncmTableCache = response.data.list;
+      try {
+        const salvo = JSON.parse(localStorage.getItem(UNIT_KEY) || 'null');
+        if (salvo && Date.now() - salvo.em < 7 * 864e5) ncmTableCache = salvo.mapa;
+      } catch { /* ignora */ }
     }
-    return ncmTableCache.find(item => item.coNcm === ncmCode)?.unit ?? 'Unidade não encontrada';
+    if (!ncmTableCache) {
+      const response = await fetchWithRetry<{ data: { list: { coNcm: string; unit: string }[] } }>(`${API_BASE_URL}/tables/ncm`);
+      const mapa: Record<string, string> = {};
+      response.data.list.forEach(item => { mapa[item.coNcm] = item.unit; });
+      ncmTableCache = mapa;
+      try { localStorage.setItem(UNIT_KEY, JSON.stringify({ em: Date.now(), mapa })); } catch { /* cota */ }
+    }
+    return ncmTableCache[ncmCode] ?? 'Unidade não encontrada';
   } catch (error) {
     console.error(`Erro ao obter unidade da NCM ${ncmCode}:`, error);
     return null;
