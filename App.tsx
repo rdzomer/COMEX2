@@ -27,11 +27,11 @@ import {
   countryYearPrice, shareEvolution, countryColors, monthlyWindow, byYearLines, OTHERS,
 } from './utils/fichaExtras.ts';
 import {
-  Comparacao, opcoesComparacao, registrosDaComparacao, paresPorPais, dadosBolhas, decomposicao, linhasCascata, calendario,
+  Comparacao, opcoesComparacao, registrosDaComparacao, paresPorPais, decomposicao, linhasCascata, calendario,
   concentracao, penetracao, linhasUf, UfRecord, faixaHhi,
 } from './utils/analiticas.ts';
 import {
-  PrecoVolumeChart, CascataChart, EfeitosChart, CalendarioHeatmap, ConcentracaoChart, HhiChart, PenetracaoChart, MapaUf, RankingUfChart, LOCAIS_BR,
+  CascataChart, EfeitosChart, CalendarioHeatmap, ConcentracaoChart, HhiChart, PenetracaoChart, MapaUf, RankingUfChart, LOCAIS_BR,
 } from './components/charts/AnaliticasKit.tsx';
 import {
   LastUpdateData, NcmDetails, ProcessedTradeData, ApiFilter, Period, CountryPeriodData, CgimNcmInfo,
@@ -344,7 +344,7 @@ const App: React.FC = () => {
   const monthRange = monthPoints.length ? `${monthPoints[0].name} a ${monthPoints[monthPoints.length - 1].name}` : '';
   const partialFootnote = partialYear && M ? `* até o mês ${M} (${getMonthNamePtBR(M)})` : '';
 
-  // ---- Visões analíticas (bolhas, decomposição, calendário, concentração, penetração, UF) ----
+  // ---- Visões analíticas (decomposição, calendário, concentração, penetração, UF) ----
   const compOpcoes = useMemo(() => (Y && M ? opcoesComparacao(Y, M) : []), [Y, M]);
   const comp = compOpcoes.find(o => o.chave === comparacao) ?? compOpcoes[0];
   const paresImp = useMemo(() => {
@@ -352,7 +352,6 @@ const App: React.FC = () => {
     const r = registrosDaComparacao(comp.chave, Y, M, countryYears.imp, countryYears.impPrev);
     return paresPorPais(r.anterior, r.atual);
   }, [countryYears, comp, Y, M]);
-  const bolhas = useMemo(() => dadosBolhas(paresImp, ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']), [paresImp]);
   const decomp = useMemo(() => decomposicao(paresImp), [paresImp]);
   const cascata = useMemo(() => linhasCascata(decomp), [decomp]);
   const cal = useMemo(() => (Y && M && rawMonthlyImportData.length ? calendario(rawMonthlyImportData, monthMetric, 2019, Y, M) : null), [rawMonthlyImportData, monthMetric, Y, M]);
@@ -629,11 +628,9 @@ const App: React.FC = () => {
           });
         });
       }
-      if (comp && countryYears && bolhas.pontos.length) {
+      if (comp && countryYears && decomp.linhas.length) {
         const src = `${SOURCE_COMEX} Períodos comparados: ${comp.anterior} e ${comp.atual}.`;
         list.push(
-          { id: 'bolhas', kind: 'bolhas', pontos: bolhas.pontos, precoMedio: bolhas.precoMedio1, rotulo0: comp.anterior, rotulo1: comp.atual, h: 520, source: src,
-            heading: `Gráfico - Preço × volume das importações por país de origem, ${comp.anterior} → ${comp.atual} (${ncmStr})` },
           { id: 'cascata', kind: 'cascata', rows: cascata, h: 440, source: src,
             heading: `Gráfico - Decomposição da variação do valor importado (US$ FOB) por país, ${comp.anterior} → ${comp.atual} (${ncmStr})` },
           { id: 'efeitos', kind: 'efeitos', linhas: decomp.linhas, h: Math.max(260, 60 + decomp.linhas.length * 34), source: src,
@@ -669,7 +666,7 @@ const App: React.FC = () => {
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ncmCode, annualRows, rollingChartData, countryPeriods, sectionVisibility, Y, M, priceData, priceCountry, monthPoints, monthMode, monthMetric, countryMetric, shareImp, shareExp, shareMetric, shareColors,
-    cal, comp, countryYears, bolhas, cascata, decomp, conc, ufs, pen]);
+    cal, comp, countryYears, cascata, decomp, conc, ufs, pen]);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
   const [renderOffscreen, setRenderOffscreen] = useState(false);
@@ -807,7 +804,7 @@ const App: React.FC = () => {
     { id: 'doze-meses', label: '12 meses', show: sectionVisibility.showRollingSumImportChart },
     { id: 'surto', label: 'Surto', show: sectionVisibility.showSurgeAnalysis },
     { id: 'paises', label: 'Países', show: sectionVisibility.showCountryData },
-    { id: 'origem-preco', label: 'Preço × volume', show: sectionVisibility.showCountryData },
+    { id: 'origem-preco', label: 'Variação por origem', show: sectionVisibility.showCountryData },
     { id: 'evolucao-paises', label: 'Evolução por país', show: sectionVisibility.showCountryData },
     { id: 'uf', label: 'UFs', show: sectionVisibility.showUfData },
     { id: 'planilhas', label: 'Contatos e NF-e', show: sectionVisibility.showExcelAnalysis },
@@ -1080,18 +1077,14 @@ const App: React.FC = () => {
             {sectionVisibility.showCountryData && comp && (
               <Section
                 id="origem-preco"
-                title="Preço, volume e variação das importações por origem"
-                description="Quem cresce, a que preço, e quem explica a variação do valor importado entre dois períodos iguais."
+                title="Variação das importações por origem"
+                description="Quem explica a variação do valor importado entre dois períodos iguais, separando o efeito quantidade do efeito preço."
                 actions={<ComparacaoSelector />}
               >
                 {!countryYears ? (
                   <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">{steps.find(st => st.key === 'country')?.status === 'error' ? 'Não foi possível carregar os dados por país.' : 'Carregando dados por país…'}</p>
                 ) : (
                   <div className="space-y-4">
-                    <ChartCard title={`Preço × volume das importações por país de origem (${comp.anterior} → ${comp.atual})`}
-                      subtitle={`Círculo tracejado = ${comp.anterior}; círculo cheio = ${comp.atual}; a seta mostra o deslocamento. Tamanho = valor importado (US$ FOB). Linha tracejada = preço médio de todas as origens em ${comp.atual}${bolhas.precoMedio1 ? ` (US$ ${formatDecimalPtBR(bolhas.precoMedio1)}/kg)` : ''}. Os ${bolhas.pontos.length} maiores países${bolhas.outros ? `; outros ${bolhas.outros} não aparecem` : ''}.`}>
-                      <PrecoVolumeChart pontos={bolhas.pontos} precoMedio={bolhas.precoMedio1} rotulo0={comp.anterior} rotulo1={comp.atual} />
-                    </ChartCard>
                     <div className="grid gap-4 lg:grid-cols-5">
                       <div className="lg:col-span-3">
                         <ChartCard title={`De onde veio a variação do valor importado (US$ FOB), ${comp.anterior} → ${comp.atual}`}
