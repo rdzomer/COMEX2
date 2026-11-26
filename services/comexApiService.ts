@@ -1,4 +1,5 @@
 import { LastUpdateData, ComexStatRecord, FlowType, ApiFilter, Period, CountryDataRecord, CountryYearRecord, MonthlyComexStatRecord } from '../types.ts';
+import type { UfRecord } from '../utils/analiticas.ts';
 import { parseApiNumber, pad2 } from '../utils/formatting.ts';
 
 const API_BASE_URL = "https://api-comexstat.mdic.gov.br";
@@ -202,6 +203,30 @@ export async function fetchCountryYearData(ncmCode: string, flow: FlowType, peri
     cur.metricFOB += parseApiNumber(item.metricFOB);
     cur.metricKG += parseApiNumber(item.metricKG);
     cur.metricStatistic += parseApiNumber(item.metricStatistic);
+    by.set(k, cur);
+  }
+  return [...by.values()];
+}
+
+/** Comércio por UF (detalhamento "state" = UF do produto/domicílio fiscal da empresa) e por ano. */
+export async function fetchUfYearData(ncmCode: string, flow: FlowType, period: Period): Promise<UfRecord[]> {
+  const response = await postGeneral<{ data: { list: ComexStatRecord[] } }>({
+    flow,
+    monthDetail: false,
+    period,
+    filters: [{ filter: "ncm", values: [ncmCode] }],
+    details: ["state"],
+    metrics: ["metricFOB", "metricKG"],
+  });
+  const by = new Map<string, UfRecord>();
+  for (const item of response.data?.list || []) {
+    const it = item as Record<string, any>;
+    const uf = String(it.state ?? it.noUf ?? it.uf ?? it.siglaUf ?? it.sgUf ?? 'Não informada');
+    const year = Number(it.year);
+    const k = `${uf}|${year}`;
+    const cur = by.get(k) ?? { uf, year, metricFOB: 0, metricKG: 0 };
+    cur.metricFOB += parseApiNumber(it.metricFOB);
+    cur.metricKG += parseApiNumber(it.metricKG);
     by.set(k, cur);
   }
   return [...by.values()];

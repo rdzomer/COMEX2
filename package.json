@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@svg-maps/brazil": "^2.0.0",
     "docx": "^9.15.3",
     "file-saver": "^2.0.5",
     "react": "^19.1.0",

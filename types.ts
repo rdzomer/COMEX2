@@ -208,6 +208,7 @@ export interface SectionVisibility {
   showRollingSumImportChart: boolean;
   showSurgeAnalysis: boolean;
   showCountryData: boolean;
+  showUfData: boolean;
   showExcelAnalysis: boolean;
 }
 

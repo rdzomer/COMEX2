@@ -1,8 +1,8 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { SectionVisibility } from '../types.ts';
 
-export function ChartCard({ title, subtitle, children, legend, className = '' }: {
-  title: string; subtitle?: string; children: ReactNode; legend?: ReactNode; className?: string;
+export function ChartCard({ title, subtitle, children, legend, className = '', source = 'Fonte: Comex Stat/MDIC. Elaboração própria.' }: {
+  title: string; subtitle?: string; children: ReactNode; legend?: ReactNode; className?: string; source?: string;
 }) {
   return (
     <figure className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
@@ -13,7 +13,7 @@ export function ChartCard({ title, subtitle, children, legend, className = '' }:
       {children}
       <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
         <div className="text-[11px] text-slate-500">{legend}</div>
-        <p className="text-[11px] text-slate-400">Fonte: Comex Stat/MDIC. Elaboração própria.</p>
+        <p className="text-[11px] text-slate-400">{source}</p>
       </div>
     </figure>
   );
@@ -96,7 +96,8 @@ export const SECTION_LABELS: Record<keyof SectionVisibility, string> = {
   showFullHistoricalData: 'Dados anuais completos',
   showRollingSumImportChart: 'Importações em 12 meses (acumulado e P1–P5)',
   showSurgeAnalysis: 'Análise de surto de importação',
-  showCountryData: 'Dados por país (tabelas e treemaps)',
+  showCountryData: 'Dados por país (tabelas, treemaps, preço × volume e evolução)',
+  showUfData: 'Importações por UF (mapa)',
   showExcelAnalysis: 'Planilhas CGIM/DINTE e NF-e',
 };
 

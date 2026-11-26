@@ -20,12 +20,12 @@ export const COLORS = {
   axis: '#64748b',
 };
 
-const AXIS_TICK = { fontSize: 11, fill: COLORS.axis };
+export const AXIS_TICK = { fontSize: 11, fill: COLORS.axis };
 
 /** Tamanho fixo (para exportar como imagem) ou responsivo (na tela). */
-interface SizeProps { width?: number; height?: number }
+export interface SizeProps { width?: number; height?: number }
 
-function Frame({ width, height = 320, children }: SizeProps & { children: React.ReactElement }) {
+export function Frame({ width, height = 320, children }: SizeProps & { children: React.ReactElement }) {
   if (width) return React.cloneElement(children as React.ReactElement<any>, { width, height });
   return (
     <div style={{ width: '100%', height }}>
@@ -34,7 +34,7 @@ function Frame({ width, height = 320, children }: SizeProps & { children: React.
   );
 }
 
-function TooltipBox({ label, items }: { label: React.ReactNode; items: { name: string; value: string; color: string }[] }) {
+export function TooltipBox({ label, items }: { label: React.ReactNode; items: { name: string; value: string; color: string }[] }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
       <p className="mb-1 font-semibold text-slate-800">{label}</p>

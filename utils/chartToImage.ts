@@ -11,7 +11,7 @@ export async function elementToPng(el: HTMLElement, width: number, height: numbe
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  const svg = el.querySelector('svg.recharts-surface') as SVGSVGElement | null;
+  const svg = el.querySelector('svg.recharts-surface, svg[data-export-svg]') as SVGSVGElement | null;
   if (svg) {
     const clone = svg.cloneNode(true) as SVGSVGElement;
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
