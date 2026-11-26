@@ -120,55 +120,53 @@ const M = (P: number[], C: number[], novasP: string[] = [], novasC: string[] = [
   sugeridas: expandir(C, novasC).filter(id => !expandir(P, novasP).includes(id)),
 });
 
+/**
+ * Poucos modelos, para não virar mais uma tela de configuração: a ficha completa é o padrão e os demais
+ * juntam demandas parecidas da matriz da seção 6 (DCC+LETEC, desabastecimento+competitividade, defesa+renovação).
+ * Necessidades específicas ficam em "Meus modelos".
+ */
+const uniao = (...ms: ReturnType<typeof M>[]) => {
+  const analises = ordenar(ms.flatMap(m => m.analises));
+  return { analises, sugeridas: ordenar(ms.flatMap(m => m.sugeridas)).filter(id => !analises.includes(id)) };
+};
+
 export const MODELOS_INSTITUCIONAIS: Modelo[] = [
-  { id: 'rapida', nome: 'Visão rápida da NCM', titulo: 'Visão rápida de comércio exterior', tipo: 'institucional', versao: 1,
-    objetivo: 'Conhecer a situação comercial do produto em poucos minutos.',
-    ...M([2, 3, 4, 7, 8, 12], [5, 6, 9, 11, 13, 14, 15, 17], ['janelas', 'sinais-radar']) },
-  { id: 'dcc', nome: 'Elevação tarifária por DCC', titulo: 'Análise de pleito de elevação tarifária — DCC', tipo: 'institucional', versao: 1,
-    objetivo: 'Identificar indícios de desequilíbrio comercial conjuntural e dimensionar a pressão importadora recente.',
-    ...M([2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 17], [5, 6, 15, 18], ['janelas', 'preco-mensal', 'base100'], ['sinais-radar', 'origens-diagnostico']),
-    aviso: 'Os limiares do radar são sinais estatísticos; não caracterizam, por si, desequilíbrio comercial conjuntural.' },
-  { id: 'letec', nome: 'Elevação tarifária por LETEC', titulo: 'Análise de pleito de elevação tarifária — LETEC', tipo: 'institucional', versao: 1,
-    objetivo: 'Investigar a evolução estrutural da competitividade comercial e da indústria nacional.',
-    ...M([2, 3, 4, 5, 7, 8, 11, 12, 13, 14, 15, 17], [6, 9, 10, 18], ['base100'], ['janelas', 'preco-mensal']) },
-  { id: 'desabastecimento', nome: 'Redução tarifária por desabastecimento', titulo: 'Análise de pleito de redução tarifária por desabastecimento', tipo: 'institucional', versao: 1,
-    objetivo: 'Investigar a dependência das importações e levantar elementos sobre a oferta nacional.',
-    ...M([2, 3, 4, 6, 7, 8, 9, 12, 14, 15, 17], [5, 10, 11, 13, 16, 18], ['janelas', 'origens-diagnostico']),
-    aviso: 'Importações observadas não equivalem a necessidade não atendida. As bases não permitem comprovar desabastecimento, capacidade, especificações técnicas, estoques ou disponibilidade comercial.' },
-  { id: 'competitividade', nome: 'Redução tarifária por competitividade', titulo: 'Análise de pleito de redução tarifária por competitividade', tipo: 'institucional', versao: 1,
-    objetivo: 'Contextualizar a dependência de insumos importados e possíveis efeitos sobre a indústria consumidora.',
-    ...M([2, 3, 4, 7, 8, 12, 14, 15, 17], [5, 6, 9, 13, 16, 18], ['preco-mensal', 'origens-diagnostico']),
-    aviso: 'Sem estrutura de custos ou coeficientes técnicos, não se estima o impacto efetivo da tarifa sobre o produto final.' },
-  { id: 'defesa', nome: 'Defesa comercial e investigação de surtos', titulo: 'Evidências estatísticas preliminares — defesa comercial e surtos', tipo: 'institucional', versao: 1,
-    objetivo: 'Reunir evidências estatísticas preliminares para subsidiar a análise de defesa comercial.',
-    ...M([2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17], [6, 16, 18], ['janelas', 'origens-diagnostico', 'sinais-radar'], ['preco-mensal', 'base100']),
-    aviso: 'Não substitui investigação formal nem comprova dumping, dano ou nexo causal.' },
-  { id: 'renovacao', nome: 'Renovação e avaliação de medidas vigentes', titulo: 'Avaliação de medida vigente', tipo: 'institucional', versao: 1,
-    objetivo: 'Verificar se as condições comerciais que motivaram a medida persistem ou mudaram.',
-    ...M([2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 17], [5, 6, 10, 15, 18], ['sinais-radar'], ['janelas', 'preco-mensal']),
-    aviso: 'A comparação antes/depois a partir de uma data de referência ainda não está disponível (etapa 3); esta ficha mostra o histórico. Associação temporal não indica eficácia causal.' },
-  { id: 'ex', nome: 'Ex-tarifário ou produto de escopo específico', titulo: 'Contexto comercial para Ex-tarifário', tipo: 'institucional', versao: 1,
-    objetivo: 'Contextualizar o comércio quando a descrição do produto é mais restrita que a NCM.',
-    ...M([2, 3, 4, 6, 7, 9, 12, 15, 17], [5, 8, 13, 14, 16, 18], ['origens-diagnostico']),
-    aviso: 'Os dados representam a totalidade da NCM, não necessariamente o Ex. A falta de informação específica não implica ausência de importação ou de fabricação.' },
-  { id: 'origens', nome: 'Origens, dependência externa e mudanças de fluxo', titulo: 'Origens, dependência externa e mudanças de fluxo', tipo: 'institucional', versao: 1,
-    objetivo: 'Aprofundar a análise geográfica das importações.',
-    ...M([4, 9, 12, 13, 14, 15, 16], [2, 3, 7, 8, 11, 17], ['origens-diagnostico']),
-    aviso: 'Serve como triagem de possíveis desvios; o Comex Stat não comprova redirecionamento de fluxos mundiais.' },
-  { id: 'exterior', nome: 'Impactos comerciais internacionais', titulo: 'Exposição a mercados estrangeiros', tipo: 'institucional', versao: 1,
-    objetivo: 'Avaliar a exposição brasileira a mercados estrangeiros.',
-    ...M([2, 3, 4, 5, 7, 12, 14], [6, 8, 9, 15]),
-    aviso: 'Foco em exportações e destinos. Exposição não é perda esperada; a lista de produtos afetados por medida estrangeira é delimitada pelo analista.' },
-  { id: 'setor', nome: 'Reunião com entidade setorial', titulo: 'Panorama para reunião com entidade setorial', tipo: 'institucional', versao: 1,
-    objetivo: 'Panorama amplo e sintético para reuniões com entidades industriais.',
-    ...M([2, 3, 4, 5, 7, 8, 11, 12, 14, 17], [6, 9, 10, 13, 15, 18], ['sinais-radar']),
-    aviso: 'A visão setorial completa (evolução da cesta, categorias, rankings e radar) está em Cestas de NCMs e no Radar de alertas.' },
-  { id: 'completa', nome: 'Ficha completa', titulo: 'Ficha individual da NCM', tipo: 'institucional', versao: 1,
-    objetivo: 'Todas as análises disponíveis.',
+  { id: 'completa', nome: 'Ficha completa', titulo: 'Ficha individual da NCM', tipo: 'institucional', versao: 2,
+    objetivo: 'Todas as análises disponíveis. Use “Análises” para esconder o que não interessa.',
     analises: [...ORDEM_CATALOGO] },
+  { id: 'rapida', nome: 'Visão rápida', titulo: 'Visão rápida de comércio exterior', tipo: 'institucional', versao: 2,
+    objetivo: 'Situação comercial do produto em poucos minutos.',
+    ...M([2, 3, 4, 5, 7, 8, 12], [6, 9, 11, 13, 14, 15, 17], ['janelas', 'sinais-radar']) },
+  { id: 'elevacao', nome: 'Pleito de elevação tarifária (DCC/LETEC)', titulo: 'Análise de pleito de elevação tarifária', tipo: 'institucional', versao: 1,
+    objetivo: 'Pressão importadora recente e evolução estrutural da competitividade e da indústria nacional.',
+    ...uniao(
+      M([2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 17], [5, 6, 15, 18], ['janelas', 'preco-mensal', 'base100'], ['sinais-radar', 'origens-diagnostico']),
+      M([2, 3, 4, 5, 7, 8, 11, 12, 13, 14, 15, 17], [6, 9, 10, 18], ['base100'], ['janelas', 'preco-mensal']),
+    ),
+    aviso: 'Os sinais estatísticos (radar, surtos, janelas) não caracterizam, por si, desequilíbrio comercial conjuntural.' },
+  { id: 'reducao', nome: 'Pleito de redução tarifária (desabastecimento/competitividade)', titulo: 'Análise de pleito de redução tarifária', tipo: 'institucional', versao: 1,
+    objetivo: 'Dependência das importações, origens e oferta nacional.',
+    ...uniao(
+      M([2, 3, 4, 6, 7, 8, 9, 12, 14, 15, 17], [5, 10, 11, 13, 16, 18], ['janelas', 'origens-diagnostico']),
+      M([2, 3, 4, 7, 8, 12, 14, 15, 17], [5, 6, 9, 13, 16, 18], ['preco-mensal', 'origens-diagnostico']),
+    ),
+    aviso: 'Importações observadas não equivalem a necessidade não atendida, e as bases não comprovam desabastecimento, capacidade ou estoques. Sem estrutura de custos, não se estima o impacto da tarifa sobre o produto final.' },
+  { id: 'defesa', nome: 'Defesa comercial, surtos e medidas vigentes', titulo: 'Evidências estatísticas preliminares — defesa comercial', tipo: 'institucional', versao: 1,
+    objetivo: 'Evidências estatísticas preliminares para investigações e para avaliar se as condições que motivaram uma medida persistem.',
+    ...uniao(
+      M([2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17], [6, 16, 18], ['janelas', 'origens-diagnostico', 'sinais-radar'], ['preco-mensal', 'base100']),
+      M([2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 17], [5, 6, 10, 15, 18], ['sinais-radar'], ['janelas', 'preco-mensal']),
+    ),
+    aviso: 'Não substitui investigação formal nem comprova dumping, dano ou nexo causal. Associação temporal não indica eficácia de medida.' },
 ];
 
-export const MODELO_PADRAO = 'rapida';
+/** Modelos da primeira versão (links antigos) → modelo atual. */
+export const MODELO_ANTIGO: Record<string, string> = {
+  dcc: 'elevacao', letec: 'elevacao', desabastecimento: 'reducao', competitividade: 'reducao', renovacao: 'defesa',
+  ex: 'completa', origens: 'completa', exterior: 'completa', setor: 'completa',
+};
+
+export const MODELO_PADRAO = 'completa';
 
 // ---------------------------------------------------------------------------
 // Configuração em uso (modelo + ajustes temporários)

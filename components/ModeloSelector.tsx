@@ -25,7 +25,7 @@ export const ModeloBar: React.FC<Props & { aberto: boolean; onToggle: () => void
       <label className="flex items-center gap-2 text-sm">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Modelo</span>
         <select value={config.modeloId} onChange={e => escolher(e.target.value)}
-          className="max-w-[19rem] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-800 shadow-sm focus:border-brand-500 focus:outline-none">
+          className="max-w-[26rem] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-800 shadow-sm focus:border-brand-500 focus:outline-none">
           <optgroup label="Modelos institucionais">
             {MODELOS_INSTITUCIONAIS.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
           </optgroup>

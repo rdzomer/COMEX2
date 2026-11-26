@@ -18,7 +18,7 @@ import { loadAlertas, AlertasArquivo } from './utils/cestas.ts';
 import { ROTULO_SINAL } from './utils/alertas.ts';
 import {
   ANALISE, Configuracao, Dataset, Modelo, MODELOS_INSTITUCIONAIS, MODELO_PADRAO, configDoModelo, datasetsNecessarios,
-  lerPessoais, gravarPessoais, lerUltimoModelo, gravarUltimoModelo,
+  lerPessoais, gravarPessoais, MODELO_ANTIGO,
 } from './utils/catalogo.ts';
 import { janelasRecentes, precoMensal, base100, anosCompletos, diagnosticoOrigens, cascataToneladas } from './utils/novas.ts';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
@@ -63,8 +63,8 @@ const modeFromHash = (): Mode => {
   return h.startsWith('#/metodologia') ? 'metodologia' : h.startsWith('#/alertas') ? 'alertas' : h.startsWith('#/cestas') ? 'cestas' : 'ficha';
 };
 const alertEntityFromHash = () => window.location.hash.match(/^#\/alertas\/([A-Z0-9_]+)/)?.[1];
-const modeloDaUrl = () => window.location.hash.match(/[?&]modelo=([a-z0-9-]+)/)?.[1];
-const hashDaNcm = (code: string, modeloId: string) => `#/ncm/${code}${modeloId.startsWith('pessoal-') ? '' : `?modelo=${modeloId}`}`;
+const modeloDaUrl = () => { const id = window.location.hash.match(/[?&]modelo=([a-z0-9-]+)/)?.[1]; return id ? MODELO_ANTIGO[id] ?? id : undefined; };
+const hashDaNcm = (code: string, modeloId: string) => `#/ncm/${code}${modeloId.startsWith('pessoal-') || modeloId === 'completa' ? '' : `?modelo=${modeloId}`}`;
 type ApiDs = 'annual' | 'monthly' | 'country' | 'uf';
 const API_DS: ApiDs[] = ['annual', 'monthly', 'country', 'uf'];
 const ROTULO_DS: Record<ApiDs, string> = {
@@ -104,7 +104,8 @@ const App: React.FC = () => {
   // Modelos de análise: a configuração em uso define o que aparece, o que é consultado e o que vai para o Word/Excel
   const [pessoais, setPessoaisState] = useState<Modelo[]>(lerPessoais);
   const [config, setConfigState] = useState<Configuracao>(() => {
-    const id = modeloDaUrl() ?? lerUltimoModelo();
+    // padrão: ficha completa; outro modelo só quando vem no link
+    const id = modeloDaUrl() ?? MODELO_PADRAO;
     const m = [...MODELOS_INSTITUCIONAIS, ...lerPessoais()].find(x => x.id === id) ?? MODELOS_INSTITUCIONAIS.find(x => x.id === MODELO_PADRAO)!;
     return configDoModelo(m);
   });
@@ -116,7 +117,6 @@ const App: React.FC = () => {
   const setConfig = (c: Configuracao) => {
     configRef.current = c;
     setConfigState(c);
-    gravarUltimoModelo(c.modeloId);
     const code = currentNcmRef.current;
     if (code) window.history.replaceState(null, '', hashDaNcm(code, c.modeloId));
   };
