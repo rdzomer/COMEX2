@@ -14,7 +14,7 @@ import MetodologiaAlertas from './components/cestas/MetodologiaAlertas.tsx';
 import { mercadoDaNfe, salvarMercado } from './utils/mercado.ts';
 import ReportChartsOffscreen, { ReportChartSpec } from './components/ReportChartsOffscreen.tsx';
 
-import { fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryYearData, fetchUfYearData } from './services/comexApiService.ts';
+import { apiIndisponivel, reiniciarDisponibilidade, fetchLastUpdateData, fetchNcmDescription, fetchNcmUnit, fetchComexData, fetchMonthlyComexData, fetchCountryYearData, fetchUfYearData } from './services/comexApiService.ts';
 import { parseCgimDinteExcelForFiltering, parseNfeExcel, downloadWorkbook } from './services/excelService.ts';
 import {
   processAnnualTradeData, sortAnnualRows, createYearSummary, buildMonthlySeries, buildTwelveMonthSummary,
@@ -140,13 +140,16 @@ const App: React.FC = () => {
       setErrors(prev => [...prev, msg]);
     };
 
+    reiniciarDisponibilidade(); // clicar em Analisar sempre tenta de novo
     const [upd, desc, unit] = await Promise.all([fetchLastUpdateData(), fetchNcmDescription(code), fetchNcmUnit(code)]);
     if (!alive()) return;
     const details: NcmDetails = { description: desc, unit };
     setLastUpdateData(upd);
     setNcmDetails(details);
     if (!upd.year || !upd.month) {
-      fail('basic', 'Não foi possível obter a data de atualização da API Comex Stat. Tente novamente em alguns instantes.', null);
+      fail('basic', apiIndisponivel()
+        ? 'A API do Comex Stat (MDIC) está fora do ar no momento: o servidor responde “503 – serviço indisponível”. Não é um problema do app. Tente de novo em alguns minutos.'
+        : 'Não foi possível obter a data de atualização da API Comex Stat. Tente novamente em alguns instantes.', null);
       setSteps(prev => prev.map(s => (s.status === 'pending' ? { ...s, status: 'error' } : s)));
       return;
     }
@@ -897,7 +900,9 @@ const App: React.FC = () => {
         {errors.length > 0 && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {errors.map(e => <p key={e}>{e}</p>)}
-            <p className="mt-1 text-red-600/80">As demais seções foram carregadas normalmente. Para tentar de novo, clique em Analisar.</p>
+            <p className="mt-1 text-red-600/80">{steps.find(st => st.key === 'basic')?.status === 'error'
+              ? 'Para tentar de novo, clique em Analisar.'
+              : 'As demais seções foram carregadas normalmente. Para tentar de novo, clique em Analisar.'}</p>
           </div>
         )}
 
