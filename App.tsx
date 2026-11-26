@@ -1147,7 +1147,7 @@ const App: React.FC = () => {
                   <DataTable compact stickyFirstColumn={false} data={janelas} source={SOURCE_COMEX}
                     columns={[
                       { key: 'janela', header: 'Janela', LTR: true }, { key: 'periodo', header: 'Período', LTR: true }, { key: 'kg', header: 'Volume (t)' }, { key: 'varKg', header: 'Var. volume' },
-                      { key: 'usd', header: 'US$ FOB' }, { key: 'usd', header: 'US$ FOB' }, { key: 'varUsd', header: 'Var. US$ FOB' }, { key: 'preco', header: 'US$/kg' }, { key: 'varPreco', header: 'Var. preço' },
+                      { key: 'usd', header: 'US$ FOB' }, { key: 'varUsd', header: 'Var. US$ FOB' }, { key: 'preco', header: 'US$/kg' }, { key: 'varPreco', header: 'Var. preço' },
                     ]}
                     formatters={{ kg: (v: number) => formatIntegerPtBR(v / 1000), usd: formatIntegerPtBR, preco: (v: number | null) => (v === null ? '–' : formatDecimalPtBR(v)), varKg: fmtPctN, varUsd: fmtPctN, varPreco: fmtPctN }} />
                   <p className="mt-2 text-[11px] text-slate-500">Comparação com a mesma janela do ano anterior ({janelas[0].periodoAnt} para o último mês). Intensificação recente não comprova causalidade.</p>
