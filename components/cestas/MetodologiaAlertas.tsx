@@ -96,6 +96,17 @@ const MetodologiaAlertas: React.FC = () => (
       <li>O preço médio por kg mistura produtos diferentes dentro da mesma NCM; mudanças de composição também alteram o preço.</li>
       <li>As cestas dependem da classificação da planilha CGIM/DINTE; NCMs fora dela não são monitoradas.</li>
     </ul>
+
+    <H2 id="ficha">8. Métricas da ficha por NCM (modelos de análise)</H2>
+    <ul className="mt-3 list-disc space-y-1.5 pl-5">
+      <li><b>Modelos:</b> cada modelo (Visão rápida, DCC, LETEC, desabastecimento etc.) só pré-seleciona análises; a seleção pode ser ajustada sem alterar o modelo, e a ficha em Word e o Excel seguem a mesma seleção e ordem. Só os dados necessários às análises marcadas são consultados na API.</li>
+      <li><b>Preço médio:</b> sempre a razão entre somas (US$ FOB ÷ kg) no período ou na janela; nunca a média de preços. É valor unitário agregado, não preço internado nem subcotação.</li>
+      <li><b>Janelas de 3, 6 e 12 meses:</b> último mês, 3, 6 e 12 meses e ano corrente, cada um contra a mesma janela do ano anterior. Variações calculadas sobre os totais; base anterior zero = fluxo novo, sem percentual.</li>
+      <li><b>Preço móvel:</b> soma do US$ FOB ÷ soma do kg nos últimos 3, 6 ou 12 meses; só é calculado com a janela completa dentro da série consultada (desde jan/2019). Meses sem importação ficam sem ponto.</li>
+      <li><b>Base 100:</b> índice = 100 × valor do ano ÷ valor do ano-base, para o volume (kg) e o preço médio. Usa só anos completos; sem importação no ano-base, o índice não é calculado.</li>
+      <li><b>Contribuição das origens (t):</b> variação do volume de cada país entre dois períodos iguais; a soma é a variação total. Quando a variação líquida é próxima de zero (menos de 5% do aumento bruto), a contribuição passa a ser calculada sobre o aumento bruto.</li>
+      <li><b>Diagnóstico por origem:</b> participações pelo volume (kg), com o universo completo de países; diferenças de participação em pontos percentuais.</li>
+    </ul>
   </article>
 );
 

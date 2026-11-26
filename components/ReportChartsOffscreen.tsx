@@ -8,6 +8,8 @@ import { Metric, ShareEvolution, MonthPoint } from '../utils/fichaExtras.ts';
 import {
   PrecoVolumeChart, CascataChart, EfeitosChart, CalendarioHeatmap, ConcentracaoChart, HhiChart, PenetracaoChart, MapaUf, RankingUfChart,
 } from './charts/AnaliticasKit.tsx';
+import { JanelasChart, Base100Chart, PrecoMensalChart, CascataToneladasChart } from './charts/NovasKit.tsx';
+import { LinhaJanela, PontoBase100, PontoPrecoMensal, LinhaCascataT } from '../utils/novas.ts';
 import { PontoBolha, linhasCascata, LinhaDecomposicao, Calendario, PontoConcentracao, PontoPenetracao, LinhaUf } from '../utils/analiticas.ts';
 
 /** Campos comuns: título no Word, nota de fonte e, opcionalmente, uma tabela logo abaixo do gráfico. */
@@ -20,6 +22,8 @@ interface Common {
   w?: number; h?: number;
   /** 'nfe': vai para a parte de NF-e da ficha, depois das tabelas. */
   grupo?: 'nfe';
+  /** Análise do catálogo a que o gráfico pertence (define a ordem na ficha). */
+  analise: string;
 }
 
 export type ReportChartSpec = Common & (
@@ -40,6 +44,10 @@ export type ReportChartSpec = Common & (
   | { kind: 'penetracao'; data: PontoPenetracao[] }
   | { kind: 'mapaUf'; linhas: LinhaUf[] }
   | { kind: 'rankingUf'; linhas: LinhaUf[] }
+  | { kind: 'janelas'; linhas: LinhaJanela[] }
+  | { kind: 'base100'; pontos: PontoBase100[] }
+  | { kind: 'precoMensal'; pontos: PontoPrecoMensal[]; janela: number }
+  | { kind: 'cascataT'; rows: LinhaCascataT[] }
 );
 
 const W = 960;
@@ -69,6 +77,10 @@ const ReportChartsOffscreen: React.FC<{ charts: ReportChartSpec[] }> = ({ charts
           {c.kind === 'penetracao' && <PenetracaoChart data={c.data} width={w} height={h} />}
           {c.kind === 'mapaUf' && <MapaUf linhas={c.linhas} width={w} />}
           {c.kind === 'rankingUf' && <RankingUfChart linhas={c.linhas} width={w} height={h} />}
+          {c.kind === 'janelas' && <JanelasChart linhas={c.linhas} width={w} height={h} />}
+          {c.kind === 'base100' && <Base100Chart pontos={c.pontos} width={w} height={h} />}
+          {c.kind === 'precoMensal' && <PrecoMensalChart pontos={c.pontos} janela={c.janela} width={w} height={h} />}
+          {c.kind === 'cascataT' && <CascataToneladasChart rows={c.rows} width={w} height={h} />}
         </div>
       );
     })}

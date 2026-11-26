@@ -11,9 +11,25 @@ interface DataTableProps {
   source?: string;
   stickyFirstColumn?: boolean;
   compact?: boolean;
+  /** Clique no cabeçalho ordena a coluna. Linhas com _fixo: true ficam no fim. */
+  sortable?: boolean;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ title, subtitle, data, columns, formatters, source, stickyFirstColumn = true, compact }) => {
+const DataTable: React.FC<DataTableProps> = ({ title, subtitle, data: dados, columns, formatters, source, stickyFirstColumn = true, compact, sortable }) => {
+  const [ordem, setOrdem] = React.useState<{ key: string; desc: boolean } | null>(null);
+  const data = React.useMemo(() => {
+    if (!sortable || !ordem || !dados) return dados;
+    const val = (r: Record<string, any>) => r[ordem.key];
+    const cmp = (a: Record<string, any>, b: Record<string, any>) => {
+      if (a._fixo !== b._fixo) return a._fixo ? 1 : -1;
+      const x = val(a), y = val(b);
+      const nx = x === null || x === undefined, ny = y === null || y === undefined;
+      if (nx || ny) return nx === ny ? 0 : nx ? 1 : -1;
+      const r = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR');
+      return ordem.desc ? -r : r;
+    };
+    return [...dados].sort(cmp);
+  }, [dados, ordem, sortable]);
   if (!data || data.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -41,7 +57,12 @@ const DataTable: React.FC<DataTableProps> = ({ title, subtitle, data, columns, f
                   scope="col"
                   className={`${pad} whitespace-nowrap border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${col.LTR ? 'text-left' : 'text-right'} ${stickyFirstColumn && ci === 0 ? 'sticky left-0 z-20 bg-slate-50' : ''}`}
                 >
-                  {col.header}
+                  {sortable ? (
+                    <button type="button" className="inline-flex items-center gap-1 uppercase hover:text-slate-800" title="Ordenar"
+                      onClick={() => setOrdem(o => (o?.key === col.key ? { key: col.key, desc: !o.desc } : { key: col.key, desc: !col.LTR }))}>
+                      {col.header}<span className="text-[9px] text-slate-400">{ordem?.key === col.key ? (ordem.desc ? '▼' : '▲') : '↕'}</span>
+                    </button>
+                  ) : col.header}
                 </th>
               ))}
             </tr>
